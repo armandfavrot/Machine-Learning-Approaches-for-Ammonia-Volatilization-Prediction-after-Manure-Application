@@ -1,0 +1,723 @@
+---
+title: "Machine Learning Approaches for Ammonia Volatilization Prediction after Manure Application"
+author: 
+  - "Armand Favrot"
+  - "Sophie Génermont"
+  - "Céline Decuq"
+  - "Jean-Marc Giliot"
+  - "David Makowski"
+format:
+  html:
+    toc: true
+    embed-resources: true
+---
+
+```{r setup, include=FALSE}
+# Options pour le rmarkdown
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+```
+
+
+```{r}
+library ("ggplot2") 
+library ("gridExtra")
+library ("dplyr")       
+library ("paletteer")       
+library ("tibble") # rownames_to_column
+library ("tidyr") # pivot_longer
+library ("ALFAM2")
+library ("randomForest")
+library ("xgboost")
+library ("glmnet")
+library ("shapviz")
+library ("treeshap")
+
+set.seed (123)
+```
+
+
+```{r}
+axis_text_size = 24 
+axis_title_size = 30
+title_size = 26
+
+theme_replace(
+    axis.text = element_text(size = axis_text_size), 
+    axis.title.x = element_text(size = axis_title_size, angle = 0, margin = ggplot2::margin (t = 10)), 
+    axis.title.y = element_text(size = axis_title_size, angle = 90, margin = ggplot2::margin (r = 10)), 
+    plot.title = element_text(size = title_size, hjust = 0.5, face = "bold"), 
+    legend.text = element_text(size = axis_title_size), 
+    legend.title = element_text(size = axis_title_size, face = "bold"), 
+    strip.text = element_text(size = axis_title_size, face = "bold", color = "white"), 
+    strip.background = element_rect(fill = "#000080"), 
+    panel.background = element_rect(fill = "#f3faff"), panel.grid.major = element_line(colour = "white"), 
+    panel.spacing = unit(2, "lines")
+)
+
+options(ggplot2.discrete.fill = list("#67c5a7"))
+
+Dark2 = paletteer_d("RColorBrewer::Dark2")
+```
+
+# Data description 
+
+```{r}
+load (file = "scripts/data_alfam2.Rdata")
+```
+
+```{r}
+plot = data_alfam2 %>%
+
+    filter (! (app.mthd == "bsth" & incorp == "shallow")) %>%
+
+    mutate (strategy = paste (app.mthd, incorp, sep = " - ")) %>%
+    mutate (strategy = recode (strategy, "bc - none" = "A", "bc - shallow" = "B", "bc - deep" = "C", "bsth - none" = "D", "os - none" = "E", "ts - none" = "F")) %>%
+
+    ggplot () +
+        geom_line (aes (x = time, y = e.rel, group = pmid), linewidth = 0.15) +
+        ylab ("Cumul of relative emission") +
+        xlab ("Time (h)") +
+        theme (axis.title.y = element_text (margin = ggplot2::margin (r = 25))) +
+        # scale_color_manual (values = Dark2) +
+        facet_wrap (~ strategy)
+
+png (file = "figures/data_description_relative_cumul.png", width = 1000, height = 700)
+plot
+dev.off()
+
+plot
+```
+
+# Part 1 - Model comparison
+
+## Alfam2
+
+```{r}
+pars <- alfam2pars01[!grepl('man.ph', names(alfam2pars01))]
+
+alfam2_predictions =  alfam2 (
+        
+        # Important to use alfam2pars01 parameters, which correspond to the parameters used in the paper
+        # New parameters are available, but leads to ohter results (less good results)
+        pars = pars,
+    
+        dat = data_alfam2 %>% select (- j.NH3, - e.cum, - e.rel, - dataset),
+        
+        app.name = "tan.app",
+        
+        time.name = "time",
+    
+        time.incorp = "t.incorp",
+        
+        group = "pmid",
+    
+        prep = TRUE,
+        
+        warn = FALSE
+)
+```
+
+We add the true values to the prediction dataframe and we keep only the last observation of each pmid.
+
+```{r}
+alfam2_predictions = alfam2_predictions %>%
+
+        select (pmid, time, e, er) %>%
+
+        mutate (truth_e = data_alfam2$e.cum) %>%
+        mutate (truth_er = data_alfam2$e.rel) %>%
+
+        mutate (dataset = data_alfam2$dataset) %>%
+        
+        select (pmid, time, e, er, truth_e, truth_er, dataset) %>% 
+
+        filter (time == max (time), .by = pmid)
+```
+
+
+## Random forest
+
+```{r}
+load (file = "scripts/data_random_forest.Rdata")
+```
+
+```{r}
+data_random_forest_calibration = data_random_forest %>% 
+    filter (dataset == "Calibration subset") %>%
+    select (- pmid, - e.rel, - dataset)
+
+random_forest_model = randomForest (
+    
+        e.cum ~ ., 
+
+        data = data_random_forest_calibration,
+
+        importance = TRUE,
+    
+        mtry = 22, nodesize = 3, replace = FALSE, sample_frac = 0.8
+    
+)
+```
+
+```{r}
+plot (random_forest_model)
+```
+
+```{r}
+random_forest_predictions = data_random_forest %>%
+
+    mutate (e.cum_hat = predict ( 
+                random_forest_model,                       
+                newdata = data_random_forest %>% 
+                    select (- pmid, - e.cum, - e.rel, - dataset)
+            )
+    ) %>%
+
+    mutate (e.rel_hat = e.cum_hat / tan.app) %>%
+
+    select (pmid, time, e = e.cum_hat, er = e.rel_hat, truth_e = e.cum, truth_er = e.rel, dataset)    
+```
+
+
+## Xgboost
+
+```{r}
+load (file = "scripts/data_xgboost.Rdata")
+```
+
+```{r}
+
+xgboost_model = xgboost (  
+
+    data = xgb.DMatrix (
+
+        data = data_xgboost %>% 
+            filter (dataset == "Calibration subset") %>%
+            select (- pmid, - e.cum, - e.rel, - dataset) %>%
+            as.matrix %>%
+            {.}, 
+
+        label = data_xgboost %>% 
+            filter (dataset == "Calibration subset") %>%
+            select (e.cum) %>% 
+            as.matrix %>%
+            {.}
+
+    ),
+
+    max.depth = 4, nrounds = 150, eta = 0.3, min_child_weight = 0.3, subsample = 1,
+
+    verbose = FALSE,
+    
+    objective = "reg:squarederror"
+
+)
+```
+
+
+```{r}
+xgboost_predictions = data_xgboost %>%
+
+    mutate (e.cum_hat = predict (
+        
+                xgboost_model, 
+                newdata = data_xgboost %>% 
+                        select (- pmid, - e.cum, - e.rel, - dataset) %>% 
+                        as.matrix
+            )
+    ) %>%
+
+    mutate (e.rel_hat = e.cum_hat / tan.app) %>%
+
+    select (pmid, time, e = e.cum_hat, er = e.rel_hat, truth_e = e.cum, truth_er = e.rel, dataset)
+```
+
+
+## Lasso
+
+```{r}
+load (file = "scripts/data_lasso.Rdata")
+```
+
+```{r}
+lasso_model = cv.glmnet (  
+
+    x = data_lasso %>% 
+        filter (dataset == "Calibration subset") %>%
+        select (- pmid, - e.cum, - e.rel, - dataset) %>%
+        as.matrix %>%
+        {.}, 
+
+    y = data_lasso %>% 
+        filter (dataset == "Calibration subset") %>%
+        select (e.cum) %>% 
+        as.matrix %>%
+        {.},
+
+    alpha = 1
+)
+```
+
+```{r}
+lasso_predictions_vector = predict (
+        
+    lasso_model, 
+
+    data_lasso %>% 
+            select (- pmid, - e.cum, - e.rel, - dataset) %>% 
+            as.matrix
+)
+
+lasso_predictions = data_lasso %>%
+
+    mutate (e.cum_hat = exp (lasso_predictions_vector), e.cum = exp (e.cum)) %>%
+
+    mutate (e.rel_hat = e.cum_hat / tan.app) %>%
+
+    select (pmid, time, e = e.cum_hat, er = e.rel_hat, truth_e = e.cum, truth_er = e.rel, dataset) 
+```
+
+
+## Comparison
+
+```{r}
+predictions_of_all_methods = rbind (
+    alfam2_predictions %>% mutate (method = "alfam2"), 
+    random_forest_predictions %>% mutate (method = "random forest"),
+    xgboost_predictions %>% mutate (method = "xgboost"),
+    lasso_predictions %>% mutate (method = "lasso")
+)
+```
+
+
+### Observed vs predicted values
+
+```{r}
+plot = predictions_of_all_methods %>% 
+
+    filter (dataset == "Evaluation subset") %>%
+
+    mutate (method = recode (method, "alfam2" = "A", "lasso" = "B", "random forest" = "C", "xgboost" = "D")) %>%
+    
+    ggplot () +
+
+        geom_point (aes (x = truth_e, y = e, color = method), size = 3) +
+
+        geom_abline (slope = 1, linetype = "dashed") +
+
+        facet_wrap (~ method) +
+
+        scale_color_manual (values = Dark2[c(2, 5, 6, 8)]) +
+
+        labs (color = "") +
+
+        theme (legend.position = "none",
+               axis.title.y = element_text (margin = ggplot2::margin (r = 30)),
+               axis.title.x = element_text (margin = ggplot2::margin (t = 15, b = 20))) +
+
+        xlab ("Observed values") + ylab ("Predicted values") +
+
+        NULL
+
+png (file = "figures/observed_vs_predicted_values.png", width = 1000, height = 700)
+plot
+dev.off()
+
+plot
+```
+
+## Evaluation metrics
+
+```{r}
+df_evaluation_metrics = rbind (
+    
+    predictions_of_all_methods %>% 
+        select (prediction = e, truth = truth_e, dataset, method) %>% 
+        mutate (name = "72h cum. emission"),
+    
+    predictions_of_all_methods %>% 
+        select (prediction = er, truth = truth_er, dataset, method) %>% 
+        mutate (name = "72h relative cum. emission")
+    
+) %>%
+
+    summarise (
+        
+        Pearsons_r = cor (prediction, truth),
+
+        ME = 1 - (sum ( (prediction - truth) ^ 2) / sum ( (truth - mean (truth)) ^ 2)),
+
+        MAE = mean (abs (prediction - truth)),
+        
+        MBE = mean (prediction - truth),
+
+        .by = c (name, dataset, method)
+
+) %>% 
+
+    mutate_if (is.numeric, round, digits = 3)
+
+df_evaluation_metrics
+```
+
+```{r}
+df_evaluation_metrics %>%
+
+    rename (response = name) %>%
+    pivot_longer (cols = c (Pearsons_r, ME, MAE, MBE)) %>%
+    mutate (name = factor (name, levels = c("Pearsons_r", "ME", "MAE", "MBE"))) %>% 
+    filter (name %in% c ("MAE", "MBE")) %>%
+
+    arrange (name, dataset) %>%
+
+    mutate (variation = (1 - abs(value) / abs(value [method == "alfam2"])) * 100, .by = c(response, name, dataset))
+```
+
+
+```{r}
+# Evaluation for 72h cum. emission --------
+df_plot = df_evaluation_metrics %>%
+    filter (name == "72h cum. emission" & dataset == "Evaluation subset") %>%
+    select (- name) %>%
+    pivot_longer (cols = c (Pearsons_r, ME, MAE, MBE)) %>%
+    mutate (name = factor (name, levels = c("Pearsons_r", "ME", "MAE", "MBE")))
+
+suppressWarnings(ggplot (df_plot) +
+    geom_histogram (aes (x = name, y = value, fill = method), position = "dodge", stat = "identity") +
+    facet_wrap (~ name, scales = "free", nrow = 1) + 
+    xlab ("") + ylab ("") + labs (fill = "") +
+    theme (legend.position = "none ", strip.text.y = element_text(angle = 0), axis.text.x = element_blank(), axis.ticks.x = element_blank()) +
+    scale_fill_manual (values = Dark2[c(2, 5, 6, 8)]) +
+    ggtitle ("Evaluation subset") + theme (plot.title = element_text (margin= ggplot2::margin(0,0,20,0), hjust = 0, size = 30)))
+# --------
+
+
+
+# Evaluation for 72h relative cum. emission ----------
+df_plot = df_evaluation_metrics %>%
+    filter (name == "72h cum. emission" & dataset == "Calibration subset") %>%
+    select (- name) %>%
+    pivot_longer (cols = c (Pearsons_r, ME, MAE, MBE)) %>%
+    mutate (name = factor (name, levels = c("Pearsons_r", "ME", "MAE", "MBE")))
+
+suppressWarnings(ggplot (df_plot) +
+    geom_histogram (aes (x = name, y = value, fill = method), position = "dodge", stat = "identity") +
+    facet_wrap (~ name, scales = "free", nrow = 1) + 
+    xlab ("") + ylab ("") + labs (fill = "") +
+    theme (legend.position = "bottom", strip.text.y = element_text(angle = 0), axis.text.x = element_blank(), axis.ticks.x = element_blank()) +
+    scale_fill_manual (values = Dark2[c(2, 5, 6, 8)]) +
+    ggtitle ("Calibration subset") + theme (plot.title = element_text (margin= ggplot2::margin(0,0,20,0), hjust = 0, size = 30)))
+# --------
+```
+
+# Part 2 - New training with the whole dataset
+
+
+## Random forest
+
+```{r}
+random_forest_model = randomForest (
+    
+        e.cum ~ ., 
+
+        data = data_random_forest %>% select (- pmid, - e.rel, - dataset),
+
+        importance = TRUE,
+    
+        mtry = 22, nodesize = 3, replace = FALSE, sample_frac = 0.8
+    
+)
+```
+
+### Shapley
+
+```{r}
+unified_model_rf <- randomForest.unify(random_forest_model, data_random_forest_calibration %>% select (- e.cum))
+
+treeshap_rf <- treeshap(unified_model_rf, data_random_forest_calibration %>% select (- e.cum))
+
+shapley_rf <- shapviz(treeshap_rf, X = data_random_forest_calibration %>% select (- e.cum))
+```
+
+```{r}
+plot_shap_rf = sv_importance(shapley_rf, kind = "beeswarm", max_display = 10L) +
+    scale_colour_gradient(low = "darkblue", high = "red", breaks = c(0, 1), labels = c("low", "high")) +
+    theme (
+      legend.title = element_text (size = 25, margin = ggplot2::margin (r = 50, b = 100)),
+      legend.position = "bottom",
+      legend.key.width = unit(3, "cm"),
+      axis.title.x = element_text (margin = ggplot2::margin( b = 30))
+    )
+
+plot_shap_rf
+```
+
+### Gain
+
+```{r}
+df_importance_rf = importance (random_forest_model) %>%
+    as.data.frame %>%
+    rownames_to_column (var = "Variable") %>%
+    mutate (`%IncMSE` = `%IncMSE` / max (`%IncMSE`)) %>%
+    mutate (type = "A")
+
+plot_importance_rf = ggplot (df_importance_rf) + 
+        geom_point (aes (x = `%IncMSE`, y = Variable), size = 5) +
+        scale_y_discrete (limits = df_importance_rf %>% arrange (`%IncMSE`) %>% pull (Variable)) +
+        xlab ("Importance") +
+        ylab ("") +
+        facet_wrap (~ type)
+
+plot_importance_rf
+```
+## Xgboost
+
+### Shapley
+
+```{r}
+xgboost_model = xgboost (  
+
+    data = xgb.DMatrix (
+
+        data = data_xgboost %>% 
+            select (- pmid, - e.cum, - e.rel, - dataset) %>%
+            as.matrix %>%
+            {.}, 
+
+        label = data_xgboost %>% 
+            select (e.cum) %>% 
+            as.matrix %>%
+            {.}
+
+    ),
+
+    max.depth = 4, nrounds = 150, eta = 0.3, min_child_weight = 0.3, subsample = 1,
+
+    verbose = FALSE,
+    
+    objective = "reg:squarederror"
+
+)
+```
+
+```{r}
+df_tmp = data_xgboost %>% select (- pmid, - e.cum, - e.rel, - dataset)
+
+unified_model_xgboost <- xgboost.unify(xgboost_model, as.matrix(df_tmp))
+
+treeshap_xgboost <- treeshap(unified_model_xgboost, df_tmp)
+
+shapley_xgb <- shapviz(treeshap_xgboost, X = df_tmp)
+```
+
+```{r}
+plot_shap_xgboost = sv_importance(shapley_xgb, kind = "beeswarm", max_display = 10L) +
+  scale_colour_gradient(low = "darkblue", high = "red", breaks = c(0, 1), labels = c("low", "high")) +
+  theme (legend.title = element_text (size = 30, margin = ggplot2::margin (r = 50, b = 100)),
+         legend.position = "bottom",
+         legend.key.width = unit(3, "cm"),
+         axis.title.x = element_text (margin = ggplot2::margin( b = 30)))
+
+plot_shap_xgboost
+```
+
+### Gain 
+
+```{r}
+df_importance_xgb = xgb.importance (model = xgboost_model) %>%
+    mutate (Gain = Gain / max (Gain)) %>%
+    mutate (type = "B")
+
+plot_importance_xgboost = df_importance_xgb %>%
+
+    ggplot() +
+        geom_point (aes (x = Gain, y = Feature), size = 5) +
+        scale_y_discrete (limits = df_importance_xgb %>% arrange (Gain) %>% pull (Feature)) +
+        xlab ("Importance") + ylab ("") +
+        facet_wrap (~ type)
+
+plot_importance_xgboost
+```
+# Part 3 - Testing scenarios
+
+```{r}
+load (file = "scripts/data_scenarios.Rdata")
+
+data_scenarios = data_scenarios %>%
+
+    mutate (t.incorp = as.factor (t.incorp)) %>%
+    mutate (t.incorp = recode (t.incorp, "1000" = "-"))
+```
+
+
+## Random forest
+
+```{r}
+load (file = "scripts/data_scenarios_random_forest.Rdata")
+
+data_tmp = data_scenarios_random_forest
+
+random_forest_predictions_scenarios_vector = predict (
+        random_forest_model,       
+        newdata = rbind (data_random_forest_calibration[1, -1], data_tmp)[- 1, ]
+)
+
+data_scenarios = data_scenarios %>% 
+
+    mutate (e.cum_hat_random_forest = random_forest_predictions_scenarios_vector, .before = time) %>%
+
+    mutate (efficacy_random_forest = ((e.cum_hat_random_forest / e.cum_hat_random_forest[app.mthd == "bc" & incorp == "none" & t.incorp == "-"]) - 1) * 100, 
+            .by = c (tan.app, app.rate, man.dm, man.ph, man.source, group_temp, group_wind, group_rain)) %>% 
+
+    {.}
+```
+
+## Xgboost
+
+```{r}
+load (file = "scripts/data_scenarios_xgboost.Rdata")
+
+xgboost_predictions_scenarios_vector = predict (
+        
+    xgboost_model, 
+
+    data_scenarios_xgboost %>% as.matrix
+)
+
+data_scenarios = data_scenarios %>% 
+
+    mutate (e.cum_hat_xgboost = xgboost_predictions_scenarios_vector, .before = time) %>%
+    mutate (e.cum_hat_xgboost = ifelse (e.cum_hat_xgboost < 0, 0, e.cum_hat_xgboost)) %>%
+
+    mutate (efficacy_xgboost = ((e.cum_hat_xgboost / e.cum_hat_xgboost[app.mthd == "bc" & incorp == "none" & t.incorp == "-"]) - 1) * 100, 
+            .by = c (tan.app, app.rate, man.dm, man.ph, man.source, group_temp, group_wind, group_rain))
+```
+
+## Lasso
+
+```{r}
+load (file = "scripts/data_scenarios_lasso.Rdata")
+
+lasso_predictions_scenarios_vector = predict (
+        
+    lasso_model, 
+
+    data_scenarios_lasso %>% as.matrix
+)
+
+
+data_scenarios = data_scenarios %>% 
+
+    mutate (e.cum_hat_lasso = lasso_predictions_scenarios_vector, .before = time) %>%
+
+    mutate (efficacy_lasso = ((e.cum_hat_lasso / e.cum_hat_lasso[app.mthd == "bc" & incorp == "none"]) - 1) * 100, 
+            .by = c (tan.app, app.rate, man.dm, man.ph, man.source, group_temp, group_wind, group_rain))
+```
+
+## Alfam2
+
+```{r}
+load (file = "scripts/data_scenarios_alfam2.Rdata")
+
+alfam2_predictions_scenarios_vector =  alfam2 (
+        pars = alfam2pars01,
+        dat = data_scenarios_alfam2,
+        app.name = "tan.app",
+        time.name = "time",
+        time.incorp = "t.incorp",
+        group = "pmid",
+        prep = TRUE,
+        warn = FALSE
+)  %>%
+
+    filter (time == max (time), .by = pmid) %>%
+    select (pmid, e.cum_hat_alfam2 = e)
+
+data_scenarios = data_scenarios %>%
+
+    left_join (alfam2_predictions_scenarios_vector, by = "pmid") %>%
+
+    mutate (efficacy_alfam2 = ((e.cum_hat_alfam2 / e.cum_hat_alfam2[app.mthd == "bc" & incorp == "none" & t.incorp == "-"]) - 1) * 100, 
+            .by = c (tan.app, app.rate, man.dm, man.ph, man.source, group_temp, group_wind, group_rain))
+```
+
+## Comparison
+
+```{r}
+plot = data_scenarios %>% 
+    select (app.mthd, incorp, t.incorp, man.ph,
+            efficacy_random_forest, efficacy_xgboost, efficacy_lasso, efficacy_alfam2) %>%
+
+    rename (efficacy_rforest = efficacy_random_forest) %>%
+
+    pivot_longer (cols = c (5 : 8), names_to = c (".value", "method"), names_pattern = "(.+)_(.+)") %>%
+    mutate (method = recode (method, "rforest" = "random forest")) %>%
+
+    mutate (method = recode (method, "alfam2" = "A", "lasso" = "B", "random forest" = "C", "xgboost" = "D")) %>%
+
+    mutate (group = paste (app.mthd, incorp, t.incorp)) %>%
+    filter (! (app.mthd == "bc" & incorp == "none")) %>%
+
+    mutate (group = recode (group,
+                            "bc shallow 0" = "incorporation",
+                            "bsth none -" = "trailing hose",
+                            "os none -" = "open slot",
+                            "ts none -" = "trailing shoe")) %>%
+    
+    ggplot () +
+        
+        geom_boxplot (aes (x = efficacy, y = group, fill = group)) +
+        scale_fill_manual (values = Dark2[c(2 : 5)]) +
+        ylab ("") + xlab ("Efficacy") +
+        theme (legend.position = "none",
+               axis.ticks.y = element_blank()) +
+        facet_wrap (~ method, ncol = 1)
+
+png (file = "figures/emissions_for_scenarios.png", width = 1000, height = 800)
+plot
+dev.off()
+
+plot
+```
+
+
+# Figures 
+
+```{r}
+legend = cowplot::get_legend (plot_shap_rf)
+
+plot_shap_rf_2 = plot_shap_rf +
+    annotate (geom = "label", label = "A", size = 22, fontface = "bold", x = 58, y = 1.5, fill = "black", color = "white") +
+    xlim (c (- 20, 58)) +
+    theme (legend.position = "none", 
+          plot.margin = unit (c (0, 0, 1, 0), "cm"),
+          axis.text.x = element_blank(),
+          axis.title.x = element_blank(),
+          axis.ticks.x = element_blank())
+
+plot_shap_xgboost_2 = plot_shap_xgboost +
+    annotate (geom = "label", label = "B", size = 22, fontface = "bold", x = 58, y = 1.5, fill = "black", color = "white") +
+    xlim (c (- 20, 58)) + 
+    theme (legend.position = "none", 
+          plot.margin = unit (c (0, 0, 1, 0), "cm"),
+          axis.title.x = element_text (margin = ggplot2::margin (t = 10, b = 20)))
+
+
+png (file = "figures/plot_shap.png", width = 1000, height = 900)
+do.call ("grid.arrange", 
+         c (list(plot_shap_rf_2, 
+                 plot_shap_xgboost_2, 
+                 legend), 
+            list(layout_matrix = as.matrix(c (1, 2, 3)),
+                  heights = c (0.8, 1, 0.2))))
+dev.off()
+```
+
+```{r}
+png (file = "figures/plot_importance.png", width = 1300, height = 800)
+grid.arrange (plot_importance_rf, plot_importance_xgboost, nrow = 1)
+dev.off()
+```
+
+
+# Supplementary material

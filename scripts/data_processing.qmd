@@ -1,0 +1,423 @@
+---
+title: "Data processing"
+format:
+  html:
+    toc: true
+    embed-resources: true
+---
+
+
+```{r setup, include=FALSE}
+# Options pour le rmarkdown
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+```
+
+
+```{r}
+library ("ggplot2") 
+library ("dplyr")       
+library ("paletteer")       
+library ("tibble") # rownames_to_column
+library ("tidyr") # pivot_longer
+```
+
+
+```{r}
+axis_text_size = 24 
+axis_title_size = 30
+title_size = 26
+
+theme_replace(
+    axis.text = element_text(size = axis_text_size), 
+    axis.title.x = element_text(size = axis_title_size, angle = 0, margin = ggplot2::margin (t = 10)), 
+    axis.title.y = element_text(size = axis_title_size, angle = 90, margin = ggplot2::margin (r = 10)), 
+    plot.title = element_text(size = title_size, hjust = 0.5, face = "bold"), 
+    legend.text = element_text(size = axis_title_size), 
+    legend.title = element_text(size = axis_title_size, face = "bold"), 
+    strip.text = element_text(size = axis_title_size, face = "bold", color = "white"), 
+    strip.background = element_rect(fill = "#000080"), 
+    panel.background = element_rect(fill = "#f3faff"), panel.grid.major = element_line(colour = "white"), 
+    panel.spacing = unit(2, "lines")
+)
+
+options(ggplot2.discrete.fill = list("#67c5a7"))
+
+Dark2 = paletteer_d("RColorBrewer::Dark2")
+```
+
+
+# data_alfam2
+
+```{r}
+data_interval_level = read.csv (file = "../data/ALFAM2_interval.csv")
+data_plot_level = read.csv (file = "../data/ALFAM2_plot.csv")
+
+calibration_subset_pmids = read.csv (file = "../data/1-s2.0-S1352231018308069-mmc1.csv")
+evaluation_subset_pmids = read.csv (file = "../data/1-s2.0-S1352231018308069-mmc2.csv")
+
+pmids = rbind (evaluation_subset_pmids %>% mutate (dataset = "Evaluation subset"),
+               calibration_subset_pmids %>% mutate (dataset = "Calibration subset"))
+```
+
+
+```{r}
+data_alfam2 = data_interval_level %>%
+
+    filter (pmid %in% pmids$pmid) %>%
+    left_join (pmids, by = "pmid") %>%
+
+    filter (ct > 0 & ct <= 78) %>%
+    select (j.NH3, e.cum, e.rel, pmid, ct, dt, air.temp, wind.2m, rain.rate, rain.cum, dataset)  %>%
+  
+    # adding plot level informations --------
+    left_join (
+        
+        data_plot_level %>%
+            filter (pmid %in% pmids$pmid) %>%
+            select (pmid, tan.app, app.method, app.rate, man.dm, man.ph, man.source, incorp, time.incorp) %>%
+            rename (app.mthd = app.method, t.incorp = time.incorp), 
+        
+        by = "pmid"
+        
+    ) %>% 
+    # --------
+
+    replace_na (list (rain.rate = 0)) %>% 
+    replace_na (list (rain.cum = 0)) %>% 
+
+    mutate (wind.2m = replace_na (wind.2m, mean (wind.2m, na.rm = TRUE)), .by = pmid) %>%
+    mutate (air.temp = replace_na (air.temp, mean (air.temp, na.rm = TRUE)), .by = pmid) %>%
+
+    # we keep only trials that last more than 24h, to be in the same settings as for the machine learning models
+    filter (pmid %in% pmid [max (ct) > 24.5], .by = pmid) %>%
+
+    rename (time = ct) %>%
+
+    {.}
+
+save (data_alfam2, file = "data_alfam2.Rdata")
+```
+
+
+# data_ml
+
+```{r}
+data_ml = data_alfam2 %>% 
+
+    mutate_if (is.character, as.factor) %>%
+
+    mutate (t.incorp = ifelse (t.incorp <= 0.25, 0, t.incorp)) %>% 
+
+    mutate (t.incorp = ifelse (t.incorp == 0 & incorp == "none", 1000, t.incorp)) %>%
+    mutate (t.incorp = replace_na (t.incorp, 1000)) %>%
+
+    mutate (man.ph = replace_na (man.ph, median (man.ph, na.rm = TRUE)), .by = man.source) %>%
+
+    # we round dt and time in order to compute the new climatic variables
+    # cf the next chunk
+    mutate (dt = round (dt, digits = 1)) %>%
+    mutate (time = cumsum (dt), .by = pmid) %>%
+
+    {.}
+```
+
+
+```{r}
+# data = data_ml
+# pmids = data %>% unique_vector (pmid)
+# 
+# data_ml = NULL
+# 
+# for (i in pmids) {
+#         
+#     data_tmp = data %>% filter (pmid == i)
+#     
+#     time_max = max (data_tmp$time)
+#     
+#     time = seq (0, (time_max - 0.1), by = 0.1)
+#     
+#     group = c(
+#         sapply (c (1 : 6), function (j) rep (j, 40)) %>% as.vector,
+#         rep (7, (length (time) - 240))
+#     )
+#     
+#     # here we added 1+e-8 for numerical reasons, ('19.8 - 16.7 <= 3.1' return FALSE)
+#     temp = sapply (time, function (j) data_tmp %>% filter ((time - dt) <= j + 1e-8 & j + 1e-8 < time) %>% pull (air.temp))
+#     wind = sapply (time, function (j) data_tmp %>% filter ((time - dt) <= j + 1e-8 & j + 1e-8 < time) %>% pull (wind.2m))
+#     rain = sapply (time, function (j) data_tmp %>% filter ((time - dt) <= j + 1e-8 & j + 1e-8 < time) %>% pull (rain.rate))
+# 
+# 
+#     df_temp = data.frame (time = time, temp = temp, group = group) %>% 
+# 
+#         summarise (temp = mean (temp), .by = group) %>% 
+#         pivot_wider (names_from = group, values_from = temp, names_prefix = "temp_")
+#                    
+# 
+#     df_wind = data.frame (time = time, wind = wind, group = group) %>% 
+# 
+#         summarise (wind = mean (wind), .by = group) %>% 
+#         pivot_wider (names_from = group, values_from = wind, names_prefix = "wind_")
+#                    
+# 
+#     df_rain = data.frame (time = time, rain = rain, group = group) %>% 
+# 
+#         summarise (rain = mean (rain), .by = group) %>% 
+#         pivot_wider (names_from = group, values_from = rain, names_prefix = "rain_")
+# 
+# 
+#     data_tmp = cbind (
+#         data_tmp[nrow (data_tmp), ] %>% select (dataset, e.cum, e.rel, pmid, time, tan.app, app.mthd, app.rate, man.dm, man.ph, man.source, incorp, t.incorp),
+#         df_temp,
+#         df_wind,
+#         df_rain
+#     )
+#                    
+#     data_ml = rbind (data_ml, data_tmp)
+#                                                          
+# }  
+
+# save (data_ml, file = "data_ml.Rdata")
+
+load (file = "data_ml.Rdata")
+```
+
+## data_random_forest
+
+```{r}
+data_random_forest = data_ml %>%
+
+    mutate (man.source = as.numeric (recode (man.source, "pig" = 1, "cat" = 0))) %>%
+    mutate (app.mthd = as.numeric (recode (app.mthd, "bc" = 1, "ts" = 2, "os" = 3, "bsth" = 4))) %>%
+    mutate (incorp = as.numeric (recode (incorp, "none" = 1, "shallow" = 2, "deep" = 3)))
+
+save (data_random_forest, file = "data_random_forest.Rdata")
+```
+
+
+## data_xgboost
+
+```{r}
+data_xgboost = data_ml %>%
+
+    mutate (man.source = as.numeric (recode (man.source, "pig" = 1, "cat" = 0))) %>%
+    mutate (app.mthd = as.numeric (recode (app.mthd, "bc" = 1, "ts" = 2, "os" = 3, "bsth" = 4))) %>%
+    mutate (incorp = as.numeric (recode (incorp, "none" = 1, "shallow" = 2, "deep" = 3)))
+
+save (data_xgboost, file = "data_xgboost.Rdata")
+```
+
+
+## data_lasso
+
+```{r}
+data_lasso = data_ml %>%
+
+    # making the dummy variables --------
+    mutate (man.source.pig = ifelse (man.source == "pig", 1, 0)) %>%
+    select (- man.source) %>%
+
+    mutate (app.mthd.bc = ifelse (app.mthd == "bc", 1, 0)) %>%
+    mutate (app.mthd.ts = ifelse (app.mthd == "ts", 1, 0)) %>%
+    mutate (app.mthd.os = ifelse (app.mthd == "os", 1, 0)) %>%
+    select (- app.mthd) %>%
+
+    mutate (incorp.shallow = ifelse (incorp == "shallow", 1, 0)) %>%
+    mutate (incorp.deep = ifelse (incorp == "deep", 1, 0)) %>%
+    select (- incorp) %>%
+    # ---------
+
+    mutate (e.cum = log (e.cum)) %>%
+
+    {.}
+
+save (data_lasso, file = "data_lasso.Rdata")
+```
+
+
+# data_scenarios
+
+```{r}
+data_ml %>%
+
+    select (rain_1, rain_2, rain_3, rain_4, rain_5, rain_6, rain_7) %>%
+
+    apply (2, quantile, probs = seq (0.01, 1, by = 0.01)) %>%
+    as.data.frame %>%
+    mutate (quantile = row_number () / 100) %>%
+    pivot_longer (cols = - c (quantile)) %>%
+
+    filter (quantile > 0.75) %>%
+    ggplot () +
+        geom_line (aes (x = quantile, y = value, color = name)) +
+        scale_color_manual (values = Dark2)
+
+```
+
+```{r}
+quartiles_climatic_variable = cbind (
+    
+    data_ml %>%
+
+    select (temp_1, temp_2, temp_3, temp_4, temp_5, temp_6, temp_7,
+            wind_1, wind_2, wind_3, wind_4, wind_5, wind_6, wind_7) %>%
+
+    apply (2, quantile, probs = c (0.25, 0.75)) %>%
+    as.data.frame,
+    
+    data_ml %>%
+
+    select (rain_1, rain_2, rain_3, rain_4, rain_5, rain_6, rain_7) %>%
+
+    apply (2, quantile, probs = c (0.25, 0.95)) %>%
+    as.data.frame
+)
+```
+
+
+```{r}
+grid_climatic_variable = quartiles_climatic_variable [, c(1 : 7)] %>% 
+    cross_join (quartiles_climatic_variable [, c(8 : 14)]) %>% 
+    cross_join (quartiles_climatic_variable [, c(15 : 21)]) %>% 
+
+    mutate (group_temp = ifelse (temp_1 == quartiles_climatic_variable[1, 1], "q1", "q2")) %>%
+    mutate (group_wind = ifelse (wind_1 == quartiles_climatic_variable[1, 8], "q1", "q2")) %>%
+    mutate (group_rain = ifelse (rain_2 == quartiles_climatic_variable[1, 16], "q1", "q2"))
+```
+
+```{r}
+quartiles_plot_level_variable = data_ml %>%
+
+    select (tan.app, app.rate, man.dm) %>%
+
+    apply (2, quantile, probs = c (0.25, 0.75)) %>%
+    as.data.frame
+```
+
+```{r}
+grid_plot_level_variable = expand_grid (
+    time = 72,
+    tan.app = quartiles_plot_level_variable$tan.app,
+    app.rate = quartiles_plot_level_variable$app.rate,
+    man.dm = quartiles_plot_level_variable$man.dm,
+    man.ph = 7.5,
+    man.source = c ("pig", "cat"),
+    incorp = c("none", "shallow"),
+    app.mthd = c ("bc", "bsth", "os", "ts"),
+    t.incorp = c (0, 1000)
+
+) %>%     
+
+    filter (! (incorp == "none" & t.incorp %in% c(0))) %>%
+    filter (! (incorp == "shallow" & t.incorp == 1000)) %>%
+    filter (! (app.mthd %in% c ("bsth", "os", "ts") & incorp == "shallow"))
+```
+
+```{r}
+nrow (grid_plot_level_variable)
+# in the following calcul, the terms in parenthesis correspond to the variables time, tan.app, app.rate, man.dm, man.ph and man.source
+# the last terms correspond to the variables incorp, app.mthd, and t.incorp
+
+# incorp = none
+(1 * 2 * 2 * 2 * 1 * 2) * 1 * 4 * 1 +
+
+# incorp = shallow
+(1 * 2 * 2 * 2 * 1 * 2) * 1 * 1 * 1
+```
+
+```{r}
+data_scenarios = cross_join (grid_climatic_variable, grid_plot_level_variable) %>%
+
+    mutate (pmid = row_number ()) %>%
+
+    # reordering the variables
+    select (pmid, time, tan.app, app.mthd, app.rate, man.dm, man.ph, man.source, incorp, t.incorp,
+            temp_1, temp_2, temp_3, temp_4, temp_5, temp_6, temp_7,
+            wind_1, wind_2, wind_3, wind_4, wind_5, wind_6, wind_7,
+            rain_1, rain_2, rain_3, rain_4, rain_5, rain_6, rain_7,
+            group_temp, group_wind, group_rain)
+
+save (data_scenarios, file = "data_scenarios.Rdata")
+```
+
+
+## data_scenarios_random_forest
+```{r}
+data_scenarios_random_forest = data_scenarios %>% 
+    select (- pmid, - group_temp, - group_wind, - group_rain) %>%
+
+    mutate (man.source = as.numeric (recode (man.source, "pig" = 1, "cat" = 0))) %>%
+    mutate (app.mthd = as.numeric (recode (app.mthd, "bc" = 1, "ts" = 2, "os" = 3, "bsth" = 4))) %>%
+    mutate (incorp = as.numeric (recode (incorp, "none" = 1, "shallow" = 2, "deep" = 3))) %>%
+
+    {.}
+
+save (data_scenarios_random_forest, file = "data_scenarios_random_forest.Rdata")
+```
+
+
+## data_scenarios_xgboost
+
+```{r}
+data_scenarios_xgboost = data_scenarios %>% 
+
+    select (- pmid, - group_temp, - group_wind, - group_rain) %>%
+
+    mutate (man.source = as.numeric (recode (man.source, "pig" = 1, "cat" = 0))) %>%
+    mutate (app.mthd = as.numeric (recode (app.mthd, "bc" = 1, "ts" = 2, "os" = 3, "bsth" = 4))) %>%
+    mutate (incorp = as.numeric (recode (incorp, "none" = 1, "shallow" = 2, "deep" = 3))) %>%
+
+    {.}
+
+save (data_scenarios_xgboost, file = "data_scenarios_xgboost.Rdata")
+```
+
+
+## data_scenarios_lasso
+
+```{r}
+data_scenarios_lasso = data_scenarios %>% 
+
+    select (- pmid, - group_temp, - group_wind, - group_rain) %>%
+
+    # making the dummy variables --------
+    mutate (man.source.pig = ifelse (man.source == "pig", 1, 0)) %>%
+    select (- man.source) %>%
+
+    mutate (app.mthd.bc = ifelse (app.mthd == "bc", 1, 0)) %>%
+    mutate (app.mthd.ts = ifelse (app.mthd == "ts", 1, 0)) %>%
+    mutate (app.mthd.os = ifelse (app.mthd == "os", 1, 0)) %>%
+    select (- app.mthd) %>%
+
+    mutate (incorp.shallow = ifelse (incorp == "shallow", 1, 0)) %>%
+    mutate (incorp.deep = ifelse (incorp == "deep", 1, 0)) %>%
+    select (- incorp)
+    # ---------
+
+save (data_scenarios_lasso, file = "data_scenarios_lasso.Rdata")
+```
+
+
+## data_scenarios_alfam2
+
+```{r}
+data_scenarios_alfam2 = data_scenarios %>% 
+
+    mutate (t.incorp = na_if (t.incorp, 1000)) %>%
+
+    select (- time) %>%
+
+    pivot_longer (cols = c (10 : 30), names_to = c (".value", "time"), names_pattern = "(.+)_(.+)") %>%
+
+    select (- group_temp, - group_wind, - group_rain) %>%
+
+    rename (air.temp = temp, wind.2m = wind, rain.rate = rain) %>%
+
+    mutate (time = as.numeric (recode (time, "1" = "4", "2" = "8", "3" = "12", "4" = "16", "5" = "20", "6" = "24", "7" = "72"))) %>%
+    mutate (dt = ifelse (time == 72, (72 - 24), 4), .after = time) %>%
+
+    mutate (rain.cum = cumsum (rain.rate), .by = pmid)
+
+save (data_scenarios_alfam2, file = "data_scenarios_alfam2.Rdata")
+```
+
+
