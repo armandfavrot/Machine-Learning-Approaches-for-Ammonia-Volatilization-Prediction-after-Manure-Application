@@ -1,0 +1,125 @@
+---
+title: "xgboost cross-validation"
+format:
+  html:
+    toc: true
+    embed-resources: true
+---
+
+
+```{r setup, include=FALSE}
+# Options pour le rmarkdown
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+```
+
+```{r}
+library (dplyr)
+library (xgboost)
+```
+
+
+```{r}
+load (file = "processed_data/data_xgboost.Rdata")
+```
+
+
+```{r}
+calibration_subset = data_xgboost %>%
+    filter (dataset == "Calibration subset") %>%
+    select (- e.rel, - dataset, - pmid)
+```
+
+
+```{r}
+# set.seed (123)
+
+# for (i in c (1 : 490)){
+# 
+#     calibration_subset_train = calibration_subset[- i, ]
+# 
+#     calibration_subset_eval = calibration_subset[i, ]
+# 
+#     # create hyper_grid search ------
+#     hyper_grid <- expand.grid (
+# 
+#     max.depth = c (4, 6, 10, 14),
+#     nrounds = c (50, 100, 150, 300),
+#     eta = c (0.1, 0.2, 0.3),
+#     min_child_weight = c (0.5, 1, 2),
+#     subsample = c (0.8, 1),
+#     prediction = NA,
+#     truth = NA,
+#     executation_time = NA,
+#     row_index = i
+#     )
+#     # ------
+# 
+#     for (j in seq_len(nrow(hyper_grid))) {
+# 
+#         t0 = Sys.time()
+# 
+#         # fit model for ith hyperparameter combination
+#         fit <- xgboost (
+# 
+#             data = xgb.DMatrix (
+# 
+#                 data = calibration_subset_train %>%
+#                     select (- e.cum) %>%
+#                     as.matrix %>%
+#                     {.},
+# 
+#                 label = calibration_subset_train %>%
+#                     select (e.cum) %>%
+#                     as.matrix %>%
+#                     {.}
+# 
+#             ),
+# 
+#             max.depth = hyper_grid$max.depth[j],
+# 
+#             nrounds = hyper_grid$nrounds[j],
+# 
+#             min_child_weight = hyper_grid$min_child_weight[j],
+# 
+#             eta = hyper_grid$eta[j],
+# 
+#             subsample = hyper_grid$subsample[j],
+# 
+#             verbose = FALSE
+# 
+#         )
+# 
+#         tf = Sys.time()
+# 
+#         prediction = predict (fit, newdata = calibration_subset_eval %>% select (- e.cum) %>% as.matrix)
+#         truth = calibration_subset_eval$e.cum
+# 
+#         hyper_grid$prediction[j] = prediction
+#         hyper_grid$truth[j] = truth
+#         hyper_grid$executation_time[j] = difftime (tf, t0)
+# 
+#     }
+# 
+#     df_res = hyper_grid
+# 
+#     save (df_res, file = paste ("xgboost_cross_validation_results/df_res", i, "Rdata", sep = "."))
+# 
+# }
+```
+
+
+```{r}
+files <- dir ("xgboost_cross_validation_results", pattern = ".Rdata", full.names = TRUE)
+
+res <- do.call (rbind, lapply(files, function(x) get(load(x))))
+
+res %>%
+
+    summarise (rmse = sqrt (mean ((prediction - truth) ^ 2)), 
+               .by = c (max.depth, nrounds, eta, min_child_weight, subsample)) %>%
+
+    arrange (rmse)  %>% 
+
+    head (n = 20) 
+```
+

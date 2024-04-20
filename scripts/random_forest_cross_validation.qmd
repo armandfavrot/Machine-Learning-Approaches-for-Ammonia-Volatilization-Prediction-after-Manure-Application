@@ -1,0 +1,110 @@
+---
+title: "Random forest cross-validation"
+format:
+  html:
+    toc: true
+    embed-resources: true
+---
+
+
+```{r setup, include=FALSE}
+# Options pour le rmarkdown
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+```
+
+```{r}
+library (dplyr)
+library (randomForest)
+```
+
+
+```{r}
+load (file = "processed_data/data_random_forest.Rdata")
+```
+
+
+```{r}
+data_random_forest_calibration = data_random_forest %>% 
+    filter (dataset == "Calibration subset") %>%
+    select (- pmid, - e.rel, - dataset)
+```
+
+
+```{r}
+# set.seed (123)
+
+# for (i in c (1 : 490)){
+# 
+#     calibration_subset_train = data_random_forest_calibration[- i, ]
+# 
+#     calibration_subset_eval = data_random_forest_calibration[i, ]
+# 
+#     # create hyper_grid search ------
+#     hyper_grid <- expand.grid (
+# 
+#         mtry = c (8 : 28),
+#         nodesize = c(1, 3, 5),
+#         replace = c(TRUE, FALSE),
+#         samp.fraction = c(0.63, 0.8, 1),
+#         prediction = NA,
+#         truth = NA,
+#         executation_time = NA,
+#         row_index = i
+#     ) %>%
+# 
+#         filter (! (samp.fraction == 1 & replace == FALSE)) %>%
+# 
+#         mutate (sampsize = floor (samp.fraction * nrow (calibration_subset_train)))
+#     # ------
+# 
+#     for (j in seq_len(nrow(hyper_grid))) {
+# 
+#         t0 = Sys.time()
+# 
+#         # fit model for jth hyperparameter combination
+#         fit <- randomForest(
+#                 formula      = e.cum ~ ., 
+#                 data         = calibration_subset_train, 
+#                 mtry         = hyper_grid$mtry[j],
+#                 nodesize     = hyper_grid$nodesize[j],
+#                 replace      = hyper_grid$replace[j],
+#                 sampsize     = hyper_grid$sampsize[j],
+#                 seed         = 123
+#               )
+# 
+# 
+#         tf = Sys.time()
+# 
+#         prediction = predict (fit, newdata = calibration_subset_eval %>% select (- e.cum))
+#         truth = calibration_subset_eval$e.cum
+# 
+#         hyper_grid$prediction[j] = prediction
+#         hyper_grid$truth[j] = truth
+#         hyper_grid$executation_time[j] = difftime (tf, t0)
+# 
+#     }
+#     
+#     df_res = hyper_grid
+# 
+#     save (df_res, file = paste ("random_forest_cross_validation_results/df_res", i, "Rdata", sep = "."))
+# 
+# }
+```
+
+```{r}
+files <- dir ("random_forest_cross_validation_results", pattern = ".Rdata", full.names = TRUE)
+
+res <- do.call (rbind, lapply(files, function(x) get(load(x))))
+                              
+res %>%
+
+    summarise (rmse = sqrt (mean ((prediction - truth) ^ 2)), 
+               .by = c (mtry, nodesize, replace, samp.fraction)) %>%
+
+    arrange (rmse) %>% 
+
+    head (n = 20) 
+```
+
+
+

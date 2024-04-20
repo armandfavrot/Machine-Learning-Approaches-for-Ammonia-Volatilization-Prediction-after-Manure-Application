@@ -13,16 +13,21 @@ knitr::opts_chunk$set(warning = FALSE, message = FALSE)
 ```
 
 
+In this file, we build several dataframes that are used in the manuscript.qmd file. The following figure summarizes how these dataframes are built.
+
+![](figures/code_explanations.png){width=500, fig-align="center"}
+
+From the files of the ALFAM2 database (available in a Zenodo repository at https://zenodo.org/records/8109634), we first construct data_alfam2, which corresponds to the dataset used in Hafner et al (2019). From data_alfam2, we construct data_ml by retaining only the last observation of each PMID. The dynamics of climatic variables are preserved through class variables. From data_ml, we create data_lasso, data_xgboost, and data_random_forest, all of which contain the same information but are formatted according to the packages used to build the respective models. Additionally, from data_ml, we generate data_scenarios, which correspond to various scenarios on which we test the models. These scenarios are based on quantiles derived from data_ml. From data_scenarios we create four dataframes containing the same information but formatted according to the packages used for the different models.
+
 ```{r}
 library ("ggplot2") 
 library ("dplyr")       
 library ("paletteer")       
-library ("tibble") # rownames_to_column
-library ("tidyr") # pivot_longer
+library ("tidyr")
 ```
 
 
-```{r}
+```{r, include = FALSE}
 axis_text_size = 24 
 axis_title_size = 30
 title_size = 26
@@ -46,12 +51,16 @@ Dark2 = paletteer_d("RColorBrewer::Dark2")
 ```
 
 
+
+
 # data_alfam2
 
 ```{r}
+# these two files come from the ALFAM2 Zenodo repository (https://zenodo.org/records/8109634)
 data_interval_level = read.csv (file = "../data/ALFAM2_interval.csv")
 data_plot_level = read.csv (file = "../data/ALFAM2_plot.csv")
 
+# these two files come from the supplementary material of Hafner et al (2019)
 calibration_subset_pmids = read.csv (file = "../data/1-s2.0-S1352231018308069-mmc1.csv")
 evaluation_subset_pmids = read.csv (file = "../data/1-s2.0-S1352231018308069-mmc2.csv")
 
@@ -66,7 +75,7 @@ data_alfam2 = data_interval_level %>%
     filter (pmid %in% pmids$pmid) %>%
     left_join (pmids, by = "pmid") %>%
 
-    filter (ct > 0 & ct <= 78) %>%
+    filter (ct <= 78) %>%
     select (j.NH3, e.cum, e.rel, pmid, ct, dt, air.temp, wind.2m, rain.rate, rain.cum, dataset)  %>%
   
     # adding plot level informations --------
@@ -88,14 +97,9 @@ data_alfam2 = data_interval_level %>%
     mutate (wind.2m = replace_na (wind.2m, mean (wind.2m, na.rm = TRUE)), .by = pmid) %>%
     mutate (air.temp = replace_na (air.temp, mean (air.temp, na.rm = TRUE)), .by = pmid) %>%
 
-    # we keep only trials that last more than 24h, to be in the same settings as for the machine learning models
-    filter (pmid %in% pmid [max (ct) > 24.5], .by = pmid) %>%
+    rename (time = ct)
 
-    rename (time = ct) %>%
-
-    {.}
-
-save (data_alfam2, file = "data_alfam2.Rdata")
+save (data_alfam2, file = "processed_data/data_alfam2.Rdata")
 ```
 
 
@@ -115,7 +119,7 @@ data_ml = data_alfam2 %>%
 
     # we round dt and time in order to compute the new climatic variables
     # cf the next chunk
-    mutate (dt = round (dt, digits = 1)) %>%
+    mutate (dt = round (dt, digits = 2)) %>%
     mutate (time = cumsum (dt), .by = pmid) %>%
 
     {.}
@@ -124,7 +128,7 @@ data_ml = data_alfam2 %>%
 
 ```{r}
 # data = data_ml
-# pmids = data %>% unique_vector (pmid)
+# pmids = data %>% pull (pmid) %>% unique
 # 
 # data_ml = NULL
 # 
@@ -134,11 +138,11 @@ data_ml = data_alfam2 %>%
 #     
 #     time_max = max (data_tmp$time)
 #     
-#     time = seq (0, (time_max - 0.1), by = 0.1)
+#     time = seq (0, (time_max - 0.01), by = 0.01)
 #     
 #     group = c(
-#         sapply (c (1 : 6), function (j) rep (j, 40)) %>% as.vector,
-#         rep (7, (length (time) - 240))
+#         sapply (c (1 : 5), function (j) rep (j, 400)) %>% as.vector,
+#         rep (6, (length (time) - 2000))
 #     )
 #     
 #     # here we added 1+e-8 for numerical reasons, ('19.8 - 16.7 <= 3.1' return FALSE)
@@ -176,9 +180,9 @@ data_ml = data_alfam2 %>%
 #                                                          
 # }  
 
-# save (data_ml, file = "data_ml.Rdata")
+# save (processed_data/data_ml, file = "data_ml.Rdata")
 
-load (file = "data_ml.Rdata")
+load (file = "processed_data/data_ml.Rdata")
 ```
 
 ## data_random_forest
@@ -190,7 +194,7 @@ data_random_forest = data_ml %>%
     mutate (app.mthd = as.numeric (recode (app.mthd, "bc" = 1, "ts" = 2, "os" = 3, "bsth" = 4))) %>%
     mutate (incorp = as.numeric (recode (incorp, "none" = 1, "shallow" = 2, "deep" = 3)))
 
-save (data_random_forest, file = "data_random_forest.Rdata")
+save (data_random_forest, file = "processed_data/data_random_forest.Rdata")
 ```
 
 
@@ -203,7 +207,7 @@ data_xgboost = data_ml %>%
     mutate (app.mthd = as.numeric (recode (app.mthd, "bc" = 1, "ts" = 2, "os" = 3, "bsth" = 4))) %>%
     mutate (incorp = as.numeric (recode (incorp, "none" = 1, "shallow" = 2, "deep" = 3)))
 
-save (data_xgboost, file = "data_xgboost.Rdata")
+save (data_xgboost, file = "processed_data/data_xgboost.Rdata")
 ```
 
 
@@ -230,58 +234,64 @@ data_lasso = data_ml %>%
 
     {.}
 
-save (data_lasso, file = "data_lasso.Rdata")
+save (data_lasso, file = "processed_data/data_lasso.Rdata")
 ```
 
 
 # data_scenarios
 
-```{r}
+```{r, fig.width = 10, fig.height = 5}
 data_ml %>%
 
-    select (rain_1, rain_2, rain_3, rain_4, rain_5, rain_6, rain_7) %>%
+    select (rain_1, rain_2, rain_3, rain_4, rain_5, rain_6) %>%
 
     apply (2, quantile, probs = seq (0.01, 1, by = 0.01)) %>%
     as.data.frame %>%
     mutate (quantile = row_number () / 100) %>%
-    pivot_longer (cols = - c (quantile)) %>%
+    pivot_longer (cols = - c (quantile), names_to = "variable") %>%
 
     filter (quantile > 0.75) %>%
     ggplot () +
-        geom_line (aes (x = quantile, y = value, color = name)) +
+        geom_line (aes (x = quantile, y = value, color = variable)) +
         scale_color_manual (values = Dark2)
 
 ```
+
 
 ```{r}
 quartiles_climatic_variable = cbind (
     
     data_ml %>%
 
-    select (temp_1, temp_2, temp_3, temp_4, temp_5, temp_6, temp_7,
-            wind_1, wind_2, wind_3, wind_4, wind_5, wind_6, wind_7) %>%
+    select (temp_1, temp_2, temp_3, temp_4, temp_5, temp_6,
+            wind_1, wind_2, wind_3, wind_4, wind_5, wind_6) %>%
 
     apply (2, quantile, probs = c (0.25, 0.75)) %>%
     as.data.frame,
     
     data_ml %>%
 
-    select (rain_1, rain_2, rain_3, rain_4, rain_5, rain_6, rain_7) %>%
+    select (rain_1, rain_2, rain_3, rain_4, rain_5, rain_6) %>%
 
     apply (2, quantile, probs = c (0.25, 0.95)) %>%
     as.data.frame
 )
 ```
 
+```{r}
+quartiles_climatic_variable
+```
+
+
 
 ```{r}
-grid_climatic_variable = quartiles_climatic_variable [, c(1 : 7)] %>% 
-    cross_join (quartiles_climatic_variable [, c(8 : 14)]) %>% 
-    cross_join (quartiles_climatic_variable [, c(15 : 21)]) %>% 
+grid_climatic_variable = quartiles_climatic_variable [, c(1 : 6)] %>% 
+    cross_join (quartiles_climatic_variable [, c(7 : 12)]) %>% 
+    cross_join (quartiles_climatic_variable [, c(13 : 18)]) %>% 
 
     mutate (group_temp = ifelse (temp_1 == quartiles_climatic_variable[1, 1], "q1", "q2")) %>%
-    mutate (group_wind = ifelse (wind_1 == quartiles_climatic_variable[1, 8], "q1", "q2")) %>%
-    mutate (group_rain = ifelse (rain_2 == quartiles_climatic_variable[1, 16], "q1", "q2"))
+    mutate (group_wind = ifelse (wind_1 == quartiles_climatic_variable[1, 7], "q1", "q2")) %>%
+    mutate (group_rain = ifelse (rain_2 == quartiles_climatic_variable[1, 13], "q1", "q2"))
 ```
 
 ```{r}
@@ -292,6 +302,11 @@ quartiles_plot_level_variable = data_ml %>%
     apply (2, quantile, probs = c (0.25, 0.75)) %>%
     as.data.frame
 ```
+
+```{r}
+quartiles_plot_level_variable
+```
+
 
 ```{r}
 grid_plot_level_variable = expand_grid (
@@ -331,12 +346,12 @@ data_scenarios = cross_join (grid_climatic_variable, grid_plot_level_variable) %
 
     # reordering the variables
     select (pmid, time, tan.app, app.mthd, app.rate, man.dm, man.ph, man.source, incorp, t.incorp,
-            temp_1, temp_2, temp_3, temp_4, temp_5, temp_6, temp_7,
-            wind_1, wind_2, wind_3, wind_4, wind_5, wind_6, wind_7,
-            rain_1, rain_2, rain_3, rain_4, rain_5, rain_6, rain_7,
+            temp_1, temp_2, temp_3, temp_4, temp_5, temp_6,
+            wind_1, wind_2, wind_3, wind_4, wind_5, wind_6,
+            rain_1, rain_2, rain_3, rain_4, rain_5, rain_6,
             group_temp, group_wind, group_rain)
 
-save (data_scenarios, file = "data_scenarios.Rdata")
+save (data_scenarios, file = "processed_data/data_scenarios.Rdata")
 ```
 
 
@@ -351,7 +366,7 @@ data_scenarios_random_forest = data_scenarios %>%
 
     {.}
 
-save (data_scenarios_random_forest, file = "data_scenarios_random_forest.Rdata")
+save (data_scenarios_random_forest, file = "processed_data/data_scenarios_random_forest.Rdata")
 ```
 
 
@@ -368,7 +383,7 @@ data_scenarios_xgboost = data_scenarios %>%
 
     {.}
 
-save (data_scenarios_xgboost, file = "data_scenarios_xgboost.Rdata")
+save (data_scenarios_xgboost, file = "processed_data/data_scenarios_xgboost.Rdata")
 ```
 
 
@@ -393,7 +408,7 @@ data_scenarios_lasso = data_scenarios %>%
     select (- incorp)
     # ---------
 
-save (data_scenarios_lasso, file = "data_scenarios_lasso.Rdata")
+save (data_scenarios_lasso, file = "processed_data/data_scenarios_lasso.Rdata")
 ```
 
 
@@ -406,18 +421,18 @@ data_scenarios_alfam2 = data_scenarios %>%
 
     select (- time) %>%
 
-    pivot_longer (cols = c (10 : 30), names_to = c (".value", "time"), names_pattern = "(.+)_(.+)") %>%
+    pivot_longer (cols = c (10 : 27), names_to = c (".value", "time"), names_pattern = "(.+)_(.+)") %>%
 
     select (- group_temp, - group_wind, - group_rain) %>%
 
     rename (air.temp = temp, wind.2m = wind, rain.rate = rain) %>%
 
-    mutate (time = as.numeric (recode (time, "1" = "4", "2" = "8", "3" = "12", "4" = "16", "5" = "20", "6" = "24", "7" = "72"))) %>%
-    mutate (dt = ifelse (time == 72, (72 - 24), 4), .after = time) %>%
+    mutate (time = as.numeric (recode (time, "1" = "4", "2" = "8", "3" = "12", "4" = "16", "5" = "20", "6" = "72"))) %>%
+    mutate (dt = ifelse (time == 72, (72 - 20), 4), .after = time) %>%
 
     mutate (rain.cum = cumsum (rain.rate), .by = pmid)
 
-save (data_scenarios_alfam2, file = "data_scenarios_alfam2.Rdata")
+save (data_scenarios_alfam2, file = "processed_data/data_scenarios_alfam2.Rdata")
 ```
 
 
