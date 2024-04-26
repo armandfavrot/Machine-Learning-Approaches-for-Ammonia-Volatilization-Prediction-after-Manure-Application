@@ -141,14 +141,13 @@ We add the true values to the prediction dataframe and we keep only the last obs
 ```{r}
 alfam2_predictions = alfam2_predictions %>%
 
-        select (pmid, time, e, er) %>%
+        select (pmid, time, e) %>%
 
         mutate (truth_e = data_alfam2$e.cum) %>%
-        mutate (truth_er = data_alfam2$e.rel) %>%
 
         mutate (dataset = data_alfam2$dataset) %>%
         
-        select (pmid, time, e, er, truth_e, truth_er, dataset) %>% 
+        select (pmid, time, e, truth_e, dataset) %>% 
 
         filter (time == max (time), .by = pmid)
 ```
@@ -193,9 +192,7 @@ random_forest_predictions = data_random_forest %>%
             )
     ) %>%
 
-    mutate (e.rel_hat = e.cum_hat / tan.app) %>%
-
-    select (pmid, time, e = e.cum_hat, er = e.rel_hat, truth_e = e.cum, truth_er = e.rel, dataset)    
+    select (pmid, time, e = e.cum_hat, truth_e = e.cum, dataset)    
 ```
 
 
@@ -247,9 +244,7 @@ xgboost_predictions = data_xgboost %>%
             )
     ) %>%
 
-    mutate (e.rel_hat = e.cum_hat / tan.app) %>%
-
-    select (pmid, time, e = e.cum_hat, er = e.rel_hat, truth_e = e.cum, truth_er = e.rel, dataset)
+    select (pmid, time, e = e.cum_hat, truth_e = e.cum, dataset)
 ```
 
 
@@ -293,9 +288,7 @@ lasso_predictions = data_lasso %>%
 
     mutate (e.cum_hat = exp (lasso_predictions_vector), e.cum = exp (e.cum)) %>%
 
-    mutate (e.rel_hat = e.cum_hat / tan.app) %>%
-
-    select (pmid, time, e = e.cum_hat, er = e.rel_hat, truth_e = e.cum, truth_er = e.rel, dataset) 
+    select (pmid, time, e = e.cum_hat, truth_e = e.cum, dataset) 
 ```
 
 
@@ -353,17 +346,9 @@ dev.off()
 ### Evaluation metrics
 
 ```{r}
-df_evaluation_metrics = rbind (
-    
-    predictions_of_all_methods %>% 
-        select (prediction = e, truth = truth_e, dataset, method) %>% 
-        mutate (name = "72h cum. emission"),
-    
-    predictions_of_all_methods %>% 
-        select (prediction = er, truth = truth_er, dataset, method) %>% 
-        mutate (name = "72h relative cum. emission")
-    
-) %>%
+df_evaluation_metrics = predictions_of_all_methods %>% 
+  
+    select (prediction = e, truth = truth_e, dataset, method) %>% 
 
     summarise (
         
@@ -375,7 +360,7 @@ df_evaluation_metrics = rbind (
         
         MBE = mean (prediction - truth),
 
-        .by = c (name, dataset, method)
+        .by = c (dataset, method)
 
 ) %>% 
 
@@ -387,21 +372,19 @@ df_evaluation_metrics
 ```{r}
 df_evaluation_metrics %>%
 
-    rename (response = name) %>%
     pivot_longer (cols = c (Pearsons_r, ME, MAE, MBE)) %>%
     mutate (name = factor (name, levels = c("Pearsons_r", "ME", "MAE", "MBE"))) %>% 
     filter (name %in% c ("MAE", "MBE")) %>%
 
     arrange (name, dataset) %>%
 
-    mutate (variation = (1 - abs(value) / abs(value [method == "alfam2"])) * 100, .by = c(response, name, dataset))
+    mutate (variation = (1 - abs(value) / abs(value [method == "alfam2"])) * 100, .by = c(name, dataset))
 ```
 
 ```{r, fig.width = 16, fig.height = 5}
 # Evaluation for 72h cum. emission
 df_plot = df_evaluation_metrics %>%
-    filter (name == "72h cum. emission" & dataset == "Evaluation subset") %>%
-    select (- name) %>%
+    filter (dataset == "Evaluation subset") %>%
     pivot_longer (cols = c (Pearsons_r, ME, MAE, MBE)) %>%
     mutate (name = factor (name, levels = c("Pearsons_r", "ME", "MAE", "MBE")))
 
@@ -418,8 +401,7 @@ suppressWarnings(ggplot (df_plot) +
 ```{r, fig.width = 16, fig.height = 5}
 # Evaluation for 72h relative cum. emission
 df_plot = df_evaluation_metrics %>%
-    filter (name == "72h cum. emission" & dataset == "Calibration subset") %>%
-    select (- name) %>%
+    filter (dataset == "Calibration subset") %>%
     pivot_longer (cols = c (Pearsons_r, ME, MAE, MBE)) %>%
     mutate (name = factor (name, levels = c("Pearsons_r", "ME", "MAE", "MBE")))
 
