@@ -103,6 +103,13 @@ save (data_alfam2, file = "processed_data/data_alfam2.Rdata")
 ```
 
 
+```{r}
+data_alfam2 %>%
+  summarise (n_obs = n(), n_trial = length (unique (pmid)))
+```
+
+
+
 # data_ml
 
 ```{r}
