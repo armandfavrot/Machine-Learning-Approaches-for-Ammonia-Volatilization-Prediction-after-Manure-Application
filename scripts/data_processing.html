@@ -3092,7 +3092,7 @@ vertical-align: -.125em;
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span> (pmid <span class="sc">%in%</span> pmids<span class="sc">$</span>pmid) <span class="sc">%&gt;%</span></span>
 <span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">left_join</span> (pmids, <span class="at">by =</span> <span class="st">&quot;pmid&quot;</span>) <span class="sc">%&gt;%</span></span>
 <span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span> (ct <span class="sc">&gt;</span> <span class="dv">0</span> <span class="sc">&amp;</span> ct <span class="sc">&lt;=</span> <span class="dv">78</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span> (ct <span class="sc">&lt;=</span> <span class="dv">78</span>) <span class="sc">%&gt;%</span></span>
 <span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span> (j.NH3, e.cum, e.rel, pmid, ct, dt, air.temp, wind<span class="fl">.2</span>m, rain.rate, rain.cum, dataset)  <span class="sc">%&gt;%</span></span>
 <span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>  </span>
 <span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    <span class="co"># adding plot level informations --------</span></span>
@@ -3114,14 +3114,9 @@ vertical-align: -.125em;
 <span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span> (<span class="at">wind.2m =</span> <span class="fu">replace_na</span> (wind<span class="fl">.2</span>m, <span class="fu">mean</span> (wind<span class="fl">.2</span>m, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)), <span class="at">.by =</span> pmid) <span class="sc">%&gt;%</span></span>
 <span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span> (<span class="at">air.temp =</span> <span class="fu">replace_na</span> (air.temp, <span class="fu">mean</span> (air.temp, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)), <span class="at">.by =</span> pmid) <span class="sc">%&gt;%</span></span>
 <span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>    <span class="co"># we keep only trials that last more than 24h, to be in the same settings as for the machine learning models</span></span>
-<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span> (pmid <span class="sc">%in%</span> pmid [<span class="fu">max</span> (ct) <span class="sc">&gt;</span> <span class="fl">24.5</span>], <span class="at">.by =</span> pmid) <span class="sc">%&gt;%</span></span>
-<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rename</span> (<span class="at">time =</span> ct) <span class="sc">%&gt;%</span></span>
-<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a>    {.}</span>
-<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a><span class="fu">save</span> (data_alfam2, <span class="at">file =</span> <span class="st">&quot;processed_data/data_alfam2.Rdata&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rename</span> (<span class="at">time =</span> ct)</span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a><span class="fu">save</span> (data_alfam2, <span class="at">file =</span> <span class="st">&quot;processed_data/data_alfam2.Rdata&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="data_ml" class="level1">
@@ -3294,147 +3289,169 @@ vertical-align: -.125em;
 <span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>grid_climatic_variable <span class="ot">=</span> quartiles_climatic_variable [, <span class="fu">c</span>(<span class="dv">1</span> <span class="sc">:</span> <span class="dv">6</span>)] <span class="sc">%&gt;%</span> </span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cross_join</span> (quartiles_climatic_variable [, <span class="fu">c</span>(<span class="dv">7</span> <span class="sc">:</span> <span class="dv">12</span>)]) <span class="sc">%&gt;%</span> </span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cross_join</span> (quartiles_climatic_variable [, <span class="fu">c</span>(<span class="dv">13</span> <span class="sc">:</span> <span class="dv">18</span>)]) <span class="sc">%&gt;%</span> </span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span> (<span class="at">group_temp =</span> <span class="fu">ifelse</span> (temp_1 <span class="sc">==</span> quartiles_climatic_variable[<span class="dv">1</span>, <span class="dv">1</span>], <span class="st">&quot;q1&quot;</span>, <span class="st">&quot;q2&quot;</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span> (<span class="at">group_wind =</span> <span class="fu">ifelse</span> (wind_1 <span class="sc">==</span> quartiles_climatic_variable[<span class="dv">1</span>, <span class="dv">7</span>], <span class="st">&quot;q1&quot;</span>, <span class="st">&quot;q2&quot;</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span> (<span class="at">group_rain =</span> <span class="fu">ifelse</span> (rain_2 <span class="sc">==</span> quartiles_climatic_variable[<span class="dv">1</span>, <span class="dv">13</span>], <span class="st">&quot;q1&quot;</span>, <span class="st">&quot;q2&quot;</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>quartiles_climatic_variable</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>      temp_1   temp_2   temp_3   temp_4   temp_5    temp_6   wind_1   wind_2
+25% 11.18938 10.78750  8.68000  8.02500  8.10000  9.217254 2.328148 2.328836
+75% 18.17625 18.53875 16.17125 14.19762 14.01875 15.967937 4.976241 4.618903
+      wind_3 wind_4 wind_5   wind_6    rain_1    rain_2  rain_3    rain_4
+25% 1.815625 1.4000 1.4000 2.240848 0.0000000 0.0000000 0.00000 0.0000000
+75% 3.801775 3.6832 3.6832 4.081271 0.3442935 0.1852901 0.34253 0.3872755
+      rain_5    rain_6
+25% 0.000000 0.0000000
+75% 0.302594 0.1483079</code></pre>
+</div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>quartiles_plot_level_variable <span class="ot">=</span> data_ml <span class="sc">%&gt;%</span></span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span> (tan.app, app.rate, man.dm) <span class="sc">%&gt;%</span></span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">apply</span> (<span class="dv">2</span>, quantile, <span class="at">probs =</span> <span class="fu">c</span> (<span class="fl">0.25</span>, <span class="fl">0.75</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>    as.data.frame</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>grid_climatic_variable <span class="ot">=</span> quartiles_climatic_variable [, <span class="fu">c</span>(<span class="dv">1</span> <span class="sc">:</span> <span class="dv">6</span>)] <span class="sc">%&gt;%</span> </span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cross_join</span> (quartiles_climatic_variable [, <span class="fu">c</span>(<span class="dv">7</span> <span class="sc">:</span> <span class="dv">12</span>)]) <span class="sc">%&gt;%</span> </span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cross_join</span> (quartiles_climatic_variable [, <span class="fu">c</span>(<span class="dv">13</span> <span class="sc">:</span> <span class="dv">18</span>)]) <span class="sc">%&gt;%</span> </span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span> (<span class="at">group_temp =</span> <span class="fu">ifelse</span> (temp_1 <span class="sc">==</span> quartiles_climatic_variable[<span class="dv">1</span>, <span class="dv">1</span>], <span class="st">&quot;q1&quot;</span>, <span class="st">&quot;q2&quot;</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span> (<span class="at">group_wind =</span> <span class="fu">ifelse</span> (wind_1 <span class="sc">==</span> quartiles_climatic_variable[<span class="dv">1</span>, <span class="dv">7</span>], <span class="st">&quot;q1&quot;</span>, <span class="st">&quot;q2&quot;</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span> (<span class="at">group_rain =</span> <span class="fu">ifelse</span> (rain_2 <span class="sc">==</span> quartiles_climatic_variable[<span class="dv">1</span>, <span class="dv">13</span>], <span class="st">&quot;q1&quot;</span>, <span class="st">&quot;q2&quot;</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>grid_plot_level_variable <span class="ot">=</span> <span class="fu">expand_grid</span> (</span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>    <span class="at">time =</span> <span class="dv">72</span>,</span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">tan.app =</span> quartiles_plot_level_variable<span class="sc">$</span>tan.app,</span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">app.rate =</span> quartiles_plot_level_variable<span class="sc">$</span>app.rate,</span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">man.dm =</span> quartiles_plot_level_variable<span class="sc">$</span>man.dm,</span>
-<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">man.ph =</span> <span class="fl">7.5</span>,</span>
-<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">man.source =</span> <span class="fu">c</span> (<span class="st">&quot;pig&quot;</span>, <span class="st">&quot;cat&quot;</span>),</span>
-<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">incorp =</span> <span class="fu">c</span>(<span class="st">&quot;none&quot;</span>, <span class="st">&quot;shallow&quot;</span>),</span>
-<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">app.mthd =</span> <span class="fu">c</span> (<span class="st">&quot;bc&quot;</span>, <span class="st">&quot;bsth&quot;</span>, <span class="st">&quot;os&quot;</span>, <span class="st">&quot;ts&quot;</span>),</span>
-<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">t.incorp =</span> <span class="fu">c</span> (<span class="dv">0</span>, <span class="dv">1000</span>)</span>
-<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>) <span class="sc">%&gt;%</span>     </span>
-<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span> (<span class="sc">!</span> (incorp <span class="sc">==</span> <span class="st">&quot;none&quot;</span> <span class="sc">&amp;</span> t.incorp <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">0</span>))) <span class="sc">%&gt;%</span></span>
-<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span> (<span class="sc">!</span> (incorp <span class="sc">==</span> <span class="st">&quot;shallow&quot;</span> <span class="sc">&amp;</span> t.incorp <span class="sc">==</span> <span class="dv">1000</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span> (<span class="sc">!</span> (app.mthd <span class="sc">%in%</span> <span class="fu">c</span> (<span class="st">&quot;bsth&quot;</span>, <span class="st">&quot;os&quot;</span>, <span class="st">&quot;ts&quot;</span>) <span class="sc">&amp;</span> incorp <span class="sc">==</span> <span class="st">&quot;shallow&quot;</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>quartiles_plot_level_variable <span class="ot">=</span> data_ml <span class="sc">%&gt;%</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span> (tan.app, app.rate, man.dm) <span class="sc">%&gt;%</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">apply</span> (<span class="dv">2</span>, quantile, <span class="at">probs =</span> <span class="fu">c</span> (<span class="fl">0.25</span>, <span class="fl">0.75</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>    as.data.frame</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">nrow</span> (grid_plot_level_variable)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>quartiles_plot_level_variable</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>    tan.app app.rate man.dm
+25% 36.6595   18.725   3.79
+75% 80.3025   36.650   8.15</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>grid_plot_level_variable <span class="ot">=</span> <span class="fu">expand_grid</span> (</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>    <span class="at">time =</span> <span class="dv">72</span>,</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">tan.app =</span> quartiles_plot_level_variable<span class="sc">$</span>tan.app,</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">app.rate =</span> quartiles_plot_level_variable<span class="sc">$</span>app.rate,</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">man.dm =</span> quartiles_plot_level_variable<span class="sc">$</span>man.dm,</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">man.ph =</span> <span class="fl">7.5</span>,</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">man.source =</span> <span class="fu">c</span> (<span class="st">&quot;pig&quot;</span>, <span class="st">&quot;cat&quot;</span>),</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">incorp =</span> <span class="fu">c</span>(<span class="st">&quot;none&quot;</span>, <span class="st">&quot;shallow&quot;</span>),</span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">app.mthd =</span> <span class="fu">c</span> (<span class="st">&quot;bc&quot;</span>, <span class="st">&quot;bsth&quot;</span>, <span class="st">&quot;os&quot;</span>, <span class="st">&quot;ts&quot;</span>),</span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">t.incorp =</span> <span class="fu">c</span> (<span class="dv">0</span>, <span class="dv">1000</span>)</span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a>) <span class="sc">%&gt;%</span>     </span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span> (<span class="sc">!</span> (incorp <span class="sc">==</span> <span class="st">&quot;none&quot;</span> <span class="sc">&amp;</span> t.incorp <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">0</span>))) <span class="sc">%&gt;%</span></span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span> (<span class="sc">!</span> (incorp <span class="sc">==</span> <span class="st">&quot;shallow&quot;</span> <span class="sc">&amp;</span> t.incorp <span class="sc">==</span> <span class="dv">1000</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span> (<span class="sc">!</span> (app.mthd <span class="sc">%in%</span> <span class="fu">c</span> (<span class="st">&quot;bsth&quot;</span>, <span class="st">&quot;os&quot;</span>, <span class="st">&quot;ts&quot;</span>) <span class="sc">&amp;</span> incorp <span class="sc">==</span> <span class="st">&quot;shallow&quot;</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">nrow</span> (grid_plot_level_variable)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] 80</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co"># in the following calcul, the terms in parenthesis correspond to the variables time, tan.app, app.rate, man.dm, man.ph and man.source</span></span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="co"># the last terms correspond to the variables incorp, app.mthd, and t.incorp</span></span>
-<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="co"># incorp = none</span></span>
-<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>(<span class="dv">1</span> <span class="sc">*</span> <span class="dv">2</span> <span class="sc">*</span> <span class="dv">2</span> <span class="sc">*</span> <span class="dv">2</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">*</span> <span class="dv">2</span>) <span class="sc">*</span> <span class="dv">1</span> <span class="sc">*</span> <span class="dv">4</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span></span>
-<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a><span class="co"># incorp = shallow</span></span>
-<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>(<span class="dv">1</span> <span class="sc">*</span> <span class="dv">2</span> <span class="sc">*</span> <span class="dv">2</span> <span class="sc">*</span> <span class="dv">2</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">*</span> <span class="dv">2</span>) <span class="sc">*</span> <span class="dv">1</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">*</span> <span class="dv">1</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># in the following calcul, the terms in parenthesis correspond to the variables time, tan.app, app.rate, man.dm, man.ph and man.source</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="co"># the last terms correspond to the variables incorp, app.mthd, and t.incorp</span></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="co"># incorp = none</span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>(<span class="dv">1</span> <span class="sc">*</span> <span class="dv">2</span> <span class="sc">*</span> <span class="dv">2</span> <span class="sc">*</span> <span class="dv">2</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">*</span> <span class="dv">2</span>) <span class="sc">*</span> <span class="dv">1</span> <span class="sc">*</span> <span class="dv">4</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a><span class="co"># incorp = shallow</span></span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>(<span class="dv">1</span> <span class="sc">*</span> <span class="dv">2</span> <span class="sc">*</span> <span class="dv">2</span> <span class="sc">*</span> <span class="dv">2</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">*</span> <span class="dv">2</span>) <span class="sc">*</span> <span class="dv">1</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">*</span> <span class="dv">1</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] 80</code></pre>
 </div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>data_scenarios <span class="ot">=</span> <span class="fu">cross_join</span> (grid_climatic_variable, grid_plot_level_variable) <span class="sc">%&gt;%</span></span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span> (<span class="at">pmid =</span> <span class="fu">row_number</span> ()) <span class="sc">%&gt;%</span></span>
-<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>    <span class="co"># reordering the variables</span></span>
-<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span> (pmid, time, tan.app, app.mthd, app.rate, man.dm, man.ph, man.source, incorp, t.incorp,</span>
-<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>            temp_1, temp_2, temp_3, temp_4, temp_5, temp_6,</span>
-<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>            wind_1, wind_2, wind_3, wind_4, wind_5, wind_6,</span>
-<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>            rain_1, rain_2, rain_3, rain_4, rain_5, rain_6,</span>
-<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>            group_temp, group_wind, group_rain)</span>
-<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a><span class="fu">save</span> (data_scenarios, <span class="at">file =</span> <span class="st">&quot;processed_data/data_scenarios.Rdata&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>data_scenarios <span class="ot">=</span> <span class="fu">cross_join</span> (grid_climatic_variable, grid_plot_level_variable) <span class="sc">%&gt;%</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span> (<span class="at">pmid =</span> <span class="fu">row_number</span> ()) <span class="sc">%&gt;%</span></span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>    <span class="co"># reordering the variables</span></span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span> (pmid, time, tan.app, app.mthd, app.rate, man.dm, man.ph, man.source, incorp, t.incorp,</span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>            temp_1, temp_2, temp_3, temp_4, temp_5, temp_6,</span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a>            wind_1, wind_2, wind_3, wind_4, wind_5, wind_6,</span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a>            rain_1, rain_2, rain_3, rain_4, rain_5, rain_6,</span>
+<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a>            group_temp, group_wind, group_rain)</span>
+<span id="cb22-11"><a href="#cb22-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-12"><a href="#cb22-12" aria-hidden="true" tabindex="-1"></a><span class="fu">save</span> (data_scenarios, <span class="at">file =</span> <span class="st">&quot;processed_data/data_scenarios.Rdata&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <section id="data_scenarios_random_forest" class="level2">
 <h2 class="anchored" data-anchor-id="data_scenarios_random_forest">data_scenarios_random_forest</h2>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>data_scenarios_random_forest <span class="ot">=</span> data_scenarios <span class="sc">%&gt;%</span> </span>
-<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span> (<span class="sc">-</span> pmid, <span class="sc">-</span> group_temp, <span class="sc">-</span> group_wind, <span class="sc">-</span> group_rain) <span class="sc">%&gt;%</span></span>
-<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span> (<span class="at">man.source =</span> <span class="fu">as.numeric</span> (<span class="fu">recode</span> (man.source, <span class="st">&quot;pig&quot;</span> <span class="ot">=</span> <span class="dv">1</span>, <span class="st">&quot;cat&quot;</span> <span class="ot">=</span> <span class="dv">0</span>))) <span class="sc">%&gt;%</span></span>
-<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span> (<span class="at">app.mthd =</span> <span class="fu">as.numeric</span> (<span class="fu">recode</span> (app.mthd, <span class="st">&quot;bc&quot;</span> <span class="ot">=</span> <span class="dv">1</span>, <span class="st">&quot;ts&quot;</span> <span class="ot">=</span> <span class="dv">2</span>, <span class="st">&quot;os&quot;</span> <span class="ot">=</span> <span class="dv">3</span>, <span class="st">&quot;bsth&quot;</span> <span class="ot">=</span> <span class="dv">4</span>))) <span class="sc">%&gt;%</span></span>
-<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span> (<span class="at">incorp =</span> <span class="fu">as.numeric</span> (<span class="fu">recode</span> (incorp, <span class="st">&quot;none&quot;</span> <span class="ot">=</span> <span class="dv">1</span>, <span class="st">&quot;shallow&quot;</span> <span class="ot">=</span> <span class="dv">2</span>, <span class="st">&quot;deep&quot;</span> <span class="ot">=</span> <span class="dv">3</span>))) <span class="sc">%&gt;%</span></span>
-<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>    {.}</span>
-<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a><span class="fu">save</span> (data_scenarios_random_forest, <span class="at">file =</span> <span class="st">&quot;processed_data/data_scenarios_random_forest.Rdata&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>data_scenarios_random_forest <span class="ot">=</span> data_scenarios <span class="sc">%&gt;%</span> </span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span> (<span class="sc">-</span> pmid, <span class="sc">-</span> group_temp, <span class="sc">-</span> group_wind, <span class="sc">-</span> group_rain) <span class="sc">%&gt;%</span></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span> (<span class="at">man.source =</span> <span class="fu">as.numeric</span> (<span class="fu">recode</span> (man.source, <span class="st">&quot;pig&quot;</span> <span class="ot">=</span> <span class="dv">1</span>, <span class="st">&quot;cat&quot;</span> <span class="ot">=</span> <span class="dv">0</span>))) <span class="sc">%&gt;%</span></span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span> (<span class="at">app.mthd =</span> <span class="fu">as.numeric</span> (<span class="fu">recode</span> (app.mthd, <span class="st">&quot;bc&quot;</span> <span class="ot">=</span> <span class="dv">1</span>, <span class="st">&quot;ts&quot;</span> <span class="ot">=</span> <span class="dv">2</span>, <span class="st">&quot;os&quot;</span> <span class="ot">=</span> <span class="dv">3</span>, <span class="st">&quot;bsth&quot;</span> <span class="ot">=</span> <span class="dv">4</span>))) <span class="sc">%&gt;%</span></span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span> (<span class="at">incorp =</span> <span class="fu">as.numeric</span> (<span class="fu">recode</span> (incorp, <span class="st">&quot;none&quot;</span> <span class="ot">=</span> <span class="dv">1</span>, <span class="st">&quot;shallow&quot;</span> <span class="ot">=</span> <span class="dv">2</span>, <span class="st">&quot;deep&quot;</span> <span class="ot">=</span> <span class="dv">3</span>))) <span class="sc">%&gt;%</span></span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>    {.}</span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a><span class="fu">save</span> (data_scenarios_random_forest, <span class="at">file =</span> <span class="st">&quot;processed_data/data_scenarios_random_forest.Rdata&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="data_scenarios_xgboost" class="level2">
 <h2 class="anchored" data-anchor-id="data_scenarios_xgboost">data_scenarios_xgboost</h2>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>data_scenarios_xgboost <span class="ot">=</span> data_scenarios <span class="sc">%&gt;%</span> </span>
-<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span> (<span class="sc">-</span> pmid, <span class="sc">-</span> group_temp, <span class="sc">-</span> group_wind, <span class="sc">-</span> group_rain) <span class="sc">%&gt;%</span></span>
-<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span> (<span class="at">man.source =</span> <span class="fu">as.numeric</span> (<span class="fu">recode</span> (man.source, <span class="st">&quot;pig&quot;</span> <span class="ot">=</span> <span class="dv">1</span>, <span class="st">&quot;cat&quot;</span> <span class="ot">=</span> <span class="dv">0</span>))) <span class="sc">%&gt;%</span></span>
-<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span> (<span class="at">app.mthd =</span> <span class="fu">as.numeric</span> (<span class="fu">recode</span> (app.mthd, <span class="st">&quot;bc&quot;</span> <span class="ot">=</span> <span class="dv">1</span>, <span class="st">&quot;ts&quot;</span> <span class="ot">=</span> <span class="dv">2</span>, <span class="st">&quot;os&quot;</span> <span class="ot">=</span> <span class="dv">3</span>, <span class="st">&quot;bsth&quot;</span> <span class="ot">=</span> <span class="dv">4</span>))) <span class="sc">%&gt;%</span></span>
-<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span> (<span class="at">incorp =</span> <span class="fu">as.numeric</span> (<span class="fu">recode</span> (incorp, <span class="st">&quot;none&quot;</span> <span class="ot">=</span> <span class="dv">1</span>, <span class="st">&quot;shallow&quot;</span> <span class="ot">=</span> <span class="dv">2</span>, <span class="st">&quot;deep&quot;</span> <span class="ot">=</span> <span class="dv">3</span>))) <span class="sc">%&gt;%</span></span>
-<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>    {.}</span>
-<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a><span class="fu">save</span> (data_scenarios_xgboost, <span class="at">file =</span> <span class="st">&quot;processed_data/data_scenarios_xgboost.Rdata&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>data_scenarios_xgboost <span class="ot">=</span> data_scenarios <span class="sc">%&gt;%</span> </span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span> (<span class="sc">-</span> pmid, <span class="sc">-</span> group_temp, <span class="sc">-</span> group_wind, <span class="sc">-</span> group_rain) <span class="sc">%&gt;%</span></span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span> (<span class="at">man.source =</span> <span class="fu">as.numeric</span> (<span class="fu">recode</span> (man.source, <span class="st">&quot;pig&quot;</span> <span class="ot">=</span> <span class="dv">1</span>, <span class="st">&quot;cat&quot;</span> <span class="ot">=</span> <span class="dv">0</span>))) <span class="sc">%&gt;%</span></span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span> (<span class="at">app.mthd =</span> <span class="fu">as.numeric</span> (<span class="fu">recode</span> (app.mthd, <span class="st">&quot;bc&quot;</span> <span class="ot">=</span> <span class="dv">1</span>, <span class="st">&quot;ts&quot;</span> <span class="ot">=</span> <span class="dv">2</span>, <span class="st">&quot;os&quot;</span> <span class="ot">=</span> <span class="dv">3</span>, <span class="st">&quot;bsth&quot;</span> <span class="ot">=</span> <span class="dv">4</span>))) <span class="sc">%&gt;%</span></span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span> (<span class="at">incorp =</span> <span class="fu">as.numeric</span> (<span class="fu">recode</span> (incorp, <span class="st">&quot;none&quot;</span> <span class="ot">=</span> <span class="dv">1</span>, <span class="st">&quot;shallow&quot;</span> <span class="ot">=</span> <span class="dv">2</span>, <span class="st">&quot;deep&quot;</span> <span class="ot">=</span> <span class="dv">3</span>))) <span class="sc">%&gt;%</span></span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a>    {.}</span>
+<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a><span class="fu">save</span> (data_scenarios_xgboost, <span class="at">file =</span> <span class="st">&quot;processed_data/data_scenarios_xgboost.Rdata&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="data_scenarios_lasso" class="level2">
 <h2 class="anchored" data-anchor-id="data_scenarios_lasso">data_scenarios_lasso</h2>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>data_scenarios_lasso <span class="ot">=</span> data_scenarios <span class="sc">%&gt;%</span> </span>
-<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span> (<span class="sc">-</span> pmid, <span class="sc">-</span> group_temp, <span class="sc">-</span> group_wind, <span class="sc">-</span> group_rain) <span class="sc">%&gt;%</span></span>
-<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>    <span class="co"># making the dummy variables --------</span></span>
-<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span> (<span class="at">man.source.pig =</span> <span class="fu">ifelse</span> (man.source <span class="sc">==</span> <span class="st">&quot;pig&quot;</span>, <span class="dv">1</span>, <span class="dv">0</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span> (<span class="sc">-</span> man.source) <span class="sc">%&gt;%</span></span>
-<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span> (<span class="at">app.mthd.bc =</span> <span class="fu">ifelse</span> (app.mthd <span class="sc">==</span> <span class="st">&quot;bc&quot;</span>, <span class="dv">1</span>, <span class="dv">0</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span> (<span class="at">app.mthd.ts =</span> <span class="fu">ifelse</span> (app.mthd <span class="sc">==</span> <span class="st">&quot;ts&quot;</span>, <span class="dv">1</span>, <span class="dv">0</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span> (<span class="at">app.mthd.os =</span> <span class="fu">ifelse</span> (app.mthd <span class="sc">==</span> <span class="st">&quot;os&quot;</span>, <span class="dv">1</span>, <span class="dv">0</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb21-12"><a href="#cb21-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span> (<span class="sc">-</span> app.mthd) <span class="sc">%&gt;%</span></span>
-<span id="cb21-13"><a href="#cb21-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb21-14"><a href="#cb21-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span> (<span class="at">incorp.shallow =</span> <span class="fu">ifelse</span> (incorp <span class="sc">==</span> <span class="st">&quot;shallow&quot;</span>, <span class="dv">1</span>, <span class="dv">0</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb21-15"><a href="#cb21-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span> (<span class="at">incorp.deep =</span> <span class="fu">ifelse</span> (incorp <span class="sc">==</span> <span class="st">&quot;deep&quot;</span>, <span class="dv">1</span>, <span class="dv">0</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb21-16"><a href="#cb21-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span> (<span class="sc">-</span> incorp)</span>
-<span id="cb21-17"><a href="#cb21-17" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ---------</span></span>
-<span id="cb21-18"><a href="#cb21-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb21-19"><a href="#cb21-19" aria-hidden="true" tabindex="-1"></a><span class="fu">save</span> (data_scenarios_lasso, <span class="at">file =</span> <span class="st">&quot;processed_data/data_scenarios_lasso.Rdata&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>data_scenarios_lasso <span class="ot">=</span> data_scenarios <span class="sc">%&gt;%</span> </span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span> (<span class="sc">-</span> pmid, <span class="sc">-</span> group_temp, <span class="sc">-</span> group_wind, <span class="sc">-</span> group_rain) <span class="sc">%&gt;%</span></span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>    <span class="co"># making the dummy variables --------</span></span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span> (<span class="at">man.source.pig =</span> <span class="fu">ifelse</span> (man.source <span class="sc">==</span> <span class="st">&quot;pig&quot;</span>, <span class="dv">1</span>, <span class="dv">0</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span> (<span class="sc">-</span> man.source) <span class="sc">%&gt;%</span></span>
+<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span> (<span class="at">app.mthd.bc =</span> <span class="fu">ifelse</span> (app.mthd <span class="sc">==</span> <span class="st">&quot;bc&quot;</span>, <span class="dv">1</span>, <span class="dv">0</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb25-10"><a href="#cb25-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span> (<span class="at">app.mthd.ts =</span> <span class="fu">ifelse</span> (app.mthd <span class="sc">==</span> <span class="st">&quot;ts&quot;</span>, <span class="dv">1</span>, <span class="dv">0</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb25-11"><a href="#cb25-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span> (<span class="at">app.mthd.os =</span> <span class="fu">ifelse</span> (app.mthd <span class="sc">==</span> <span class="st">&quot;os&quot;</span>, <span class="dv">1</span>, <span class="dv">0</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb25-12"><a href="#cb25-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span> (<span class="sc">-</span> app.mthd) <span class="sc">%&gt;%</span></span>
+<span id="cb25-13"><a href="#cb25-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-14"><a href="#cb25-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span> (<span class="at">incorp.shallow =</span> <span class="fu">ifelse</span> (incorp <span class="sc">==</span> <span class="st">&quot;shallow&quot;</span>, <span class="dv">1</span>, <span class="dv">0</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb25-15"><a href="#cb25-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span> (<span class="at">incorp.deep =</span> <span class="fu">ifelse</span> (incorp <span class="sc">==</span> <span class="st">&quot;deep&quot;</span>, <span class="dv">1</span>, <span class="dv">0</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb25-16"><a href="#cb25-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span> (<span class="sc">-</span> incorp)</span>
+<span id="cb25-17"><a href="#cb25-17" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ---------</span></span>
+<span id="cb25-18"><a href="#cb25-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-19"><a href="#cb25-19" aria-hidden="true" tabindex="-1"></a><span class="fu">save</span> (data_scenarios_lasso, <span class="at">file =</span> <span class="st">&quot;processed_data/data_scenarios_lasso.Rdata&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="data_scenarios_alfam2" class="level2">
 <h2 class="anchored" data-anchor-id="data_scenarios_alfam2">data_scenarios_alfam2</h2>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>data_scenarios_alfam2 <span class="ot">=</span> data_scenarios <span class="sc">%&gt;%</span> </span>
-<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span> (<span class="at">t.incorp =</span> <span class="fu">na_if</span> (t.incorp, <span class="dv">1000</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span> (<span class="sc">-</span> time) <span class="sc">%&gt;%</span></span>
-<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">pivot_longer</span> (<span class="at">cols =</span> <span class="fu">c</span> (<span class="dv">10</span> <span class="sc">:</span> <span class="dv">27</span>), <span class="at">names_to =</span> <span class="fu">c</span> (<span class="st">&quot;.value&quot;</span>, <span class="st">&quot;time&quot;</span>), <span class="at">names_pattern =</span> <span class="st">&quot;(.+)_(.+)&quot;</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span> (<span class="sc">-</span> group_temp, <span class="sc">-</span> group_wind, <span class="sc">-</span> group_rain) <span class="sc">%&gt;%</span></span>
-<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-11"><a href="#cb22-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rename</span> (<span class="at">air.temp =</span> temp, <span class="at">wind.2m =</span> wind, <span class="at">rain.rate =</span> rain) <span class="sc">%&gt;%</span></span>
-<span id="cb22-12"><a href="#cb22-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-13"><a href="#cb22-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span> (<span class="at">time =</span> <span class="fu">as.numeric</span> (<span class="fu">recode</span> (time, <span class="st">&quot;1&quot;</span> <span class="ot">=</span> <span class="st">&quot;4&quot;</span>, <span class="st">&quot;2&quot;</span> <span class="ot">=</span> <span class="st">&quot;8&quot;</span>, <span class="st">&quot;3&quot;</span> <span class="ot">=</span> <span class="st">&quot;12&quot;</span>, <span class="st">&quot;4&quot;</span> <span class="ot">=</span> <span class="st">&quot;16&quot;</span>, <span class="st">&quot;5&quot;</span> <span class="ot">=</span> <span class="st">&quot;20&quot;</span>, <span class="st">&quot;6&quot;</span> <span class="ot">=</span> <span class="st">&quot;72&quot;</span>))) <span class="sc">%&gt;%</span></span>
-<span id="cb22-14"><a href="#cb22-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span> (<span class="at">dt =</span> <span class="fu">ifelse</span> (time <span class="sc">==</span> <span class="dv">72</span>, (<span class="dv">72</span> <span class="sc">-</span> <span class="dv">20</span>), <span class="dv">4</span>), <span class="at">.after =</span> time) <span class="sc">%&gt;%</span></span>
-<span id="cb22-15"><a href="#cb22-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-16"><a href="#cb22-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span> (<span class="at">rain.cum =</span> <span class="fu">cumsum</span> (rain.rate), <span class="at">.by =</span> pmid)</span>
-<span id="cb22-17"><a href="#cb22-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-18"><a href="#cb22-18" aria-hidden="true" tabindex="-1"></a><span class="fu">save</span> (data_scenarios_alfam2, <span class="at">file =</span> <span class="st">&quot;processed_data/data_scenarios_alfam2.Rdata&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>data_scenarios_alfam2 <span class="ot">=</span> data_scenarios <span class="sc">%&gt;%</span> </span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span> (<span class="at">t.incorp =</span> <span class="fu">na_if</span> (t.incorp, <span class="dv">1000</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span> (<span class="sc">-</span> time) <span class="sc">%&gt;%</span></span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">pivot_longer</span> (<span class="at">cols =</span> <span class="fu">c</span> (<span class="dv">10</span> <span class="sc">:</span> <span class="dv">27</span>), <span class="at">names_to =</span> <span class="fu">c</span> (<span class="st">&quot;.value&quot;</span>, <span class="st">&quot;time&quot;</span>), <span class="at">names_pattern =</span> <span class="st">&quot;(.+)_(.+)&quot;</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span> (<span class="sc">-</span> group_temp, <span class="sc">-</span> group_wind, <span class="sc">-</span> group_rain) <span class="sc">%&gt;%</span></span>
+<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rename</span> (<span class="at">air.temp =</span> temp, <span class="at">wind.2m =</span> wind, <span class="at">rain.rate =</span> rain) <span class="sc">%&gt;%</span></span>
+<span id="cb26-12"><a href="#cb26-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-13"><a href="#cb26-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span> (<span class="at">time =</span> <span class="fu">as.numeric</span> (<span class="fu">recode</span> (time, <span class="st">&quot;1&quot;</span> <span class="ot">=</span> <span class="st">&quot;4&quot;</span>, <span class="st">&quot;2&quot;</span> <span class="ot">=</span> <span class="st">&quot;8&quot;</span>, <span class="st">&quot;3&quot;</span> <span class="ot">=</span> <span class="st">&quot;12&quot;</span>, <span class="st">&quot;4&quot;</span> <span class="ot">=</span> <span class="st">&quot;16&quot;</span>, <span class="st">&quot;5&quot;</span> <span class="ot">=</span> <span class="st">&quot;20&quot;</span>, <span class="st">&quot;6&quot;</span> <span class="ot">=</span> <span class="st">&quot;72&quot;</span>))) <span class="sc">%&gt;%</span></span>
+<span id="cb26-14"><a href="#cb26-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span> (<span class="at">dt =</span> <span class="fu">ifelse</span> (time <span class="sc">==</span> <span class="dv">72</span>, (<span class="dv">72</span> <span class="sc">-</span> <span class="dv">20</span>), <span class="dv">4</span>), <span class="at">.after =</span> time) <span class="sc">%&gt;%</span></span>
+<span id="cb26-15"><a href="#cb26-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-16"><a href="#cb26-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span> (<span class="at">rain.cum =</span> <span class="fu">cumsum</span> (rain.rate), <span class="at">.by =</span> pmid)</span>
+<span id="cb26-17"><a href="#cb26-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-18"><a href="#cb26-18" aria-hidden="true" tabindex="-1"></a><span class="fu">save</span> (data_scenarios_alfam2, <span class="at">file =</span> <span class="st">&quot;processed_data/data_scenarios_alfam2.Rdata&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 </section>
