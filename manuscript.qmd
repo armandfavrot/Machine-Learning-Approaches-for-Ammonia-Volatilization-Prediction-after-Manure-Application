@@ -31,6 +31,7 @@ library ("xgboost") # version 1.7.6.1
 library ("glmnet") # version 4.1.8
 library ("shapviz") # version 0.9.3
 library ("treeshap") # version 0.3.1
+library ("kableExtra") # version 1.3.4
 ```
 
 
@@ -712,6 +713,33 @@ png (file = "figures/emissions_for_scenarios.png", width = 1000, height = 800)
 plot_scenario_predictions
 dev.off()
 ```
+
+
+```{r}
+data_scenarios %>%
+    filter (efficacy_xgboost > 0) %>%
+    select (efficacy_xgboost, tan.app, app.mthd, app.rate, man.source, incorp, group_temp, group_wind, group_rain) %>%
+    kable ()
+```
+
+
+```{r}
+data_scenarios %>%
+    filter (efficacy_xgboost > 0) %>%
+    select (tan.app, app.mthd, app.rate, man.source, incorp, group_temp, group_wind, group_rain) %>%
+    lapply (table)
+```
+
+
+```{r, fig.width = 10, fig.height = 5}
+data_scenarios %>%
+  filter (efficacy_xgboost > 0) %>%
+  select (efficacy_xgboost, tan.app, app.mthd, app.rate, man.source, incorp, group_temp, group_wind, group_rain) %>%
+  ggplot () +
+    geom_histogram (aes (efficacy_xgboost)) +
+    facet_wrap (~ tan.app + app.rate)
+```
+
 
 
 
