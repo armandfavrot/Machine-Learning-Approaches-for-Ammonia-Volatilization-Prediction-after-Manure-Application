@@ -478,6 +478,15 @@ plot_importance_rf = ggplot (df_importance_rf) +
 
 plot_importance_rf
 ```
+
+```{r}
+df_importance_rf %>%
+    arrange (desc (`%IncMSE`)) %>%
+    head (n = 10)
+```
+
+
+
 ## Xgboost
 
 ```{r}
@@ -548,6 +557,14 @@ plot_importance_xgboost = df_importance_xgb %>%
         facet_wrap (~ type)
 
 plot_importance_xgboost
+```
+
+
+
+```{r}
+df_importance_xgb %>%
+    arrange (desc (Gain)) %>%
+    head (n = 10)
 ```
 
 ## Lasso
