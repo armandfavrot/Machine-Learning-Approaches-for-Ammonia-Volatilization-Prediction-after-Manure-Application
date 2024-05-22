@@ -83,7 +83,7 @@ data_alfam2 = data_interval_level %>%
         
         data_plot_level %>%
             filter (pmid %in% pmids$pmid) %>%
-            select (pmid, tan.app, app.method, app.rate, man.dm, man.ph, man.source, incorp, time.incorp) %>%
+            select (pmid, country, tan.app, app.method, app.rate, man.dm, man.ph, man.source, incorp, time.incorp) %>%
             rename (app.mthd = app.method, t.incorp = time.incorp), 
         
         by = "pmid"
@@ -101,6 +101,12 @@ data_alfam2 = data_interval_level %>%
 
 save (data_alfam2, file = "processed_data/data_alfam2.Rdata")
 ```
+
+
+```{r}
+df_join = data_alfam2 %>% select (pmid, country) %>% distinct
+```
+
 
 
 ```{r}
@@ -177,7 +183,7 @@ data_ml = data_alfam2 %>%
 # 
 # 
 #     data_tmp = cbind (
-#         data_tmp[nrow (data_tmp), ] %>% select (dataset, e.cum, e.rel, pmid, time, tan.app, app.mthd, app.rate, man.dm, man.ph, man.source, incorp, t.incorp),
+#         data_tmp[nrow (data_tmp), ] %>% select (dataset, e.cum, e.rel, pmid, country, time, tan.app, app.mthd, app.rate, man.dm, man.ph, man.source, incorp, t.incorp),
 #         df_temp,
 #         df_wind,
 #         df_rain
@@ -187,10 +193,15 @@ data_ml = data_alfam2 %>%
 #                                                          
 # }  
 
-# save (processed_data/data_ml, file = "data_ml.Rdata")
+# save (data_ml, file = "processed_data/data_ml.Rdata")
 
 load (file = "processed_data/data_ml.Rdata")
 ```
+
+```{r}
+dim (data_ml)
+```
+
 
 ## data_random_forest
 
