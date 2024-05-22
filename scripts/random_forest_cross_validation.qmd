@@ -26,7 +26,7 @@ load (file = "processed_data/data_random_forest.Rdata")
 ```{r}
 data_random_forest_calibration = data_random_forest %>% 
     filter (dataset == "Calibration subset") %>%
-    select (- pmid, - e.rel, - dataset)
+    select (- pmid, - e.rel, - dataset, - country)
 ```
 
 
