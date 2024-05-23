@@ -55,14 +55,16 @@ Dark2 = paletteer_d("RColorBrewer::Dark2")
 
 # data_alfam2
 
+Construction of the data_alfam2 dataframe.
+
 ```{r}
 # these two files come from the ALFAM2 Zenodo repository (https://zenodo.org/records/8109634)
-data_interval_level = read.csv (file = "../data/ALFAM2_interval.csv")
-data_plot_level = read.csv (file = "../data/ALFAM2_plot.csv")
+data_interval_level = read.csv (file = "../data/Hafner_et_al_2019/ALFAM2_interval.csv")
+data_plot_level = read.csv (file = "../data/Hafner_et_al_2019/ALFAM2_plot.csv")
 
 # these two files come from the supplementary material of Hafner et al (2019)
-calibration_subset_pmids = read.csv (file = "../data/1-s2.0-S1352231018308069-mmc1.csv")
-evaluation_subset_pmids = read.csv (file = "../data/1-s2.0-S1352231018308069-mmc2.csv")
+calibration_subset_pmids = read.csv (file = "../data/Hafner_et_al_2019/1-s2.0-S1352231018308069-mmc1.csv")
+evaluation_subset_pmids = read.csv (file = "../data/Hafner_et_al_2019/1-s2.0-S1352231018308069-mmc2.csv")
 
 pmids = rbind (evaluation_subset_pmids %>% mutate (dataset = "Evaluation subset"),
                calibration_subset_pmids %>% mutate (dataset = "Calibration subset"))
@@ -117,6 +119,8 @@ data_alfam2 %>%
 
 
 # data_ml
+
+Construction of the dama_ml dataframe.
 
 ```{r}
 data_ml = data_alfam2 %>% 
@@ -205,6 +209,8 @@ dim (data_ml)
 
 ## data_random_forest
 
+Construction of the data_random_forest dataframe.
+
 ```{r}
 data_random_forest = data_ml %>%
 
@@ -218,6 +224,8 @@ save (data_random_forest, file = "processed_data/data_random_forest.Rdata")
 
 ## data_xgboost
 
+Construction of the data_xgboost dataframe.
+
 ```{r}
 data_xgboost = data_ml %>%
 
@@ -230,6 +238,8 @@ save (data_xgboost, file = "processed_data/data_xgboost.Rdata")
 
 
 ## data_lasso
+
+Construction of the data_lasso dataframe.
 
 ```{r}
 data_lasso = data_ml %>%
@@ -257,6 +267,8 @@ save (data_lasso, file = "processed_data/data_lasso.Rdata")
 
 
 # data_scenarios
+
+Construction of the data_scenarios dataframe.
 
 ```{r, fig.width = 10, fig.height = 5}
 data_ml %>%
@@ -297,7 +309,7 @@ quartiles_climatic_variable = cbind (
 ```
 
 ```{r}
-quartiles_climatic_variable
+quartiles_climatic_variable %>% round (digits = 1)
 ```
 
 
@@ -322,7 +334,7 @@ quartiles_plot_level_variable = data_ml %>%
 ```
 
 ```{r}
-quartiles_plot_level_variable
+quartiles_plot_level_variable %>% round (digits = 1)
 ```
 
 
@@ -374,13 +386,16 @@ save (data_scenarios, file = "processed_data/data_scenarios.Rdata")
 
 
 ## data_scenarios_random_forest
+
+Construction of the data_scenarios_random_forest dataframe.
+
 ```{r}
 data_scenarios_random_forest = data_scenarios %>% 
     select (- pmid, - group_temp, - group_wind, - group_rain) %>%
 
     mutate (man.source = as.numeric (recode (man.source, "pig" = 1, "cat" = 0))) %>%
     mutate (app.mthd = as.numeric (recode (app.mthd, "bc" = 1, "ts" = 2, "os" = 3, "bsth" = 4))) %>%
-    mutate (incorp = as.numeric (recode (incorp, "none" = 1, "shallow" = 2, "deep" = 3))) %>%
+    mutate (incorp = as.numeric (recode (incorp, "none" = 1, "shallow" = 2))) %>%
 
     {.}
 
@@ -390,6 +405,8 @@ save (data_scenarios_random_forest, file = "processed_data/data_scenarios_random
 
 ## data_scenarios_xgboost
 
+Construction of the data_scenarios_xgboost dataframe.
+
 ```{r}
 data_scenarios_xgboost = data_scenarios %>% 
 
@@ -397,7 +414,7 @@ data_scenarios_xgboost = data_scenarios %>%
 
     mutate (man.source = as.numeric (recode (man.source, "pig" = 1, "cat" = 0))) %>%
     mutate (app.mthd = as.numeric (recode (app.mthd, "bc" = 1, "ts" = 2, "os" = 3, "bsth" = 4))) %>%
-    mutate (incorp = as.numeric (recode (incorp, "none" = 1, "shallow" = 2, "deep" = 3))) %>%
+    mutate (incorp = as.numeric (recode (incorp, "none" = 1, "shallow" = 2))) %>%
 
     {.}
 
@@ -406,6 +423,8 @@ save (data_scenarios_xgboost, file = "processed_data/data_scenarios_xgboost.Rdat
 
 
 ## data_scenarios_lasso
+
+Construction of the data_scenarios_lasso dataframe.
 
 ```{r}
 data_scenarios_lasso = data_scenarios %>% 
@@ -422,7 +441,7 @@ data_scenarios_lasso = data_scenarios %>%
     select (- app.mthd) %>%
 
     mutate (incorp.shallow = ifelse (incorp == "shallow", 1, 0)) %>%
-    mutate (incorp.deep = ifelse (incorp == "deep", 1, 0)) %>%
+    mutate (incorp.deep = 0) %>%
     select (- incorp)
     # ---------
 
@@ -432,6 +451,8 @@ save (data_scenarios_lasso, file = "processed_data/data_scenarios_lasso.Rdata")
 
 ## data_scenarios_alfam2
 
+Construction of the data_scenarios_alfam2 dataframe.
+
 ```{r}
 data_scenarios_alfam2 = data_scenarios %>% 
 
@@ -439,7 +460,7 @@ data_scenarios_alfam2 = data_scenarios %>%
 
     select (- time) %>%
 
-    pivot_longer (cols = c (10 : 27), names_to = c (".value", "time"), names_pattern = "(.+)_(.+)") %>%
+    pivot_longer (cols = contains ("temp_") | contains ("wind_") | contains ("rain_"), names_to = c (".value", "time"), names_pattern = "(.+)_(.+)") %>%
 
     select (- group_temp, - group_wind, - group_rain) %>%
 
