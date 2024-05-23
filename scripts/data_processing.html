@@ -3074,14 +3074,15 @@ vertical-align: -.125em;
 </div>
 <section id="data_alfam2" class="level1">
 <h1>data_alfam2</h1>
+<p>Construction of the data_alfam2 dataframe.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># these two files come from the ALFAM2 Zenodo repository (https://zenodo.org/records/8109634)</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>data_interval_level <span class="ot">=</span> <span class="fu">read.csv</span> (<span class="at">file =</span> <span class="st">&quot;../data/ALFAM2_interval.csv&quot;</span>)</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>data_plot_level <span class="ot">=</span> <span class="fu">read.csv</span> (<span class="at">file =</span> <span class="st">&quot;../data/ALFAM2_plot.csv&quot;</span>)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>data_interval_level <span class="ot">=</span> <span class="fu">read.csv</span> (<span class="at">file =</span> <span class="st">&quot;../data/Hafner_et_al_2019/ALFAM2_interval.csv&quot;</span>)</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>data_plot_level <span class="ot">=</span> <span class="fu">read.csv</span> (<span class="at">file =</span> <span class="st">&quot;../data/Hafner_et_al_2019/ALFAM2_plot.csv&quot;</span>)</span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="co"># these two files come from the supplementary material of Hafner et al (2019)</span></span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>calibration_subset_pmids <span class="ot">=</span> <span class="fu">read.csv</span> (<span class="at">file =</span> <span class="st">&quot;../data/1-s2.0-S1352231018308069-mmc1.csv&quot;</span>)</span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>evaluation_subset_pmids <span class="ot">=</span> <span class="fu">read.csv</span> (<span class="at">file =</span> <span class="st">&quot;../data/1-s2.0-S1352231018308069-mmc2.csv&quot;</span>)</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>calibration_subset_pmids <span class="ot">=</span> <span class="fu">read.csv</span> (<span class="at">file =</span> <span class="st">&quot;../data/Hafner_et_al_2019/1-s2.0-S1352231018308069-mmc1.csv&quot;</span>)</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>evaluation_subset_pmids <span class="ot">=</span> <span class="fu">read.csv</span> (<span class="at">file =</span> <span class="st">&quot;../data/Hafner_et_al_2019/1-s2.0-S1352231018308069-mmc2.csv&quot;</span>)</span>
 <span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>pmids <span class="ot">=</span> <span class="fu">rbind</span> (evaluation_subset_pmids <span class="sc">%&gt;%</span> <span class="fu">mutate</span> (<span class="at">dataset =</span> <span class="st">&quot;Evaluation subset&quot;</span>),</span>
 <span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>               calibration_subset_pmids <span class="sc">%&gt;%</span> <span class="fu">mutate</span> (<span class="at">dataset =</span> <span class="st">&quot;Calibration subset&quot;</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -3132,6 +3133,7 @@ vertical-align: -.125em;
 </section>
 <section id="data_ml" class="level1">
 <h1>data_ml</h1>
+<p>Construction of the dama_ml dataframe.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>data_ml <span class="ot">=</span> data_alfam2 <span class="sc">%&gt;%</span> </span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
@@ -3217,6 +3219,7 @@ vertical-align: -.125em;
 </div>
 <section id="data_random_forest" class="level2">
 <h2 class="anchored" data-anchor-id="data_random_forest">data_random_forest</h2>
+<p>Construction of the data_random_forest dataframe.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>data_random_forest <span class="ot">=</span> data_ml <span class="sc">%&gt;%</span></span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a></span>
@@ -3229,6 +3232,7 @@ vertical-align: -.125em;
 </section>
 <section id="data_xgboost" class="level2">
 <h2 class="anchored" data-anchor-id="data_xgboost">data_xgboost</h2>
+<p>Construction of the data_xgboost dataframe.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>data_xgboost <span class="ot">=</span> data_ml <span class="sc">%&gt;%</span></span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a></span>
@@ -3241,6 +3245,7 @@ vertical-align: -.125em;
 </section>
 <section id="data_lasso" class="level2">
 <h2 class="anchored" data-anchor-id="data_lasso">data_lasso</h2>
+<p>Construction of the data_lasso dataframe.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>data_lasso <span class="ot">=</span> data_ml <span class="sc">%&gt;%</span></span>
 <span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a></span>
@@ -3268,6 +3273,7 @@ vertical-align: -.125em;
 </section>
 <section id="data_scenarios" class="level1">
 <h1>data_scenarios</h1>
+<p>Construction of the data_scenarios dataframe.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>data_ml <span class="sc">%&gt;%</span></span>
 <span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a></span>
@@ -3306,17 +3312,14 @@ vertical-align: -.125em;
 <span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>quartiles_climatic_variable</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>quartiles_climatic_variable <span class="sc">%&gt;%</span> <span class="fu">round</span> (<span class="at">digits =</span> <span class="dv">1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>      temp_1   temp_2   temp_3   temp_4   temp_5    temp_6   wind_1   wind_2
-25% 11.18938 10.78750  8.68000  8.02500  8.10000  9.217254 2.328148 2.328836
-75% 18.17625 18.53875 16.17125 14.19762 14.01875 15.967937 4.976241 4.618903
-      wind_3 wind_4 wind_5   wind_6    rain_1    rain_2  rain_3    rain_4
-25% 1.815625 1.4000 1.4000 2.240848 0.0000000 0.0000000 0.00000 0.0000000
-75% 3.801775 3.6832 3.6832 4.081271 0.3442935 0.1852901 0.34253 0.3872755
-      rain_5    rain_6
-25% 0.000000 0.0000000
-75% 0.302594 0.1483079</code></pre>
+<pre><code>    temp_1 temp_2 temp_3 temp_4 temp_5 temp_6 wind_1 wind_2 wind_3 wind_4
+25%   11.2   10.8    8.7    8.0    8.1    9.2    2.3    2.3    1.8    1.4
+75%   18.2   18.5   16.2   14.2   14.0   16.0    5.0    4.6    3.8    3.7
+    wind_5 wind_6 rain_1 rain_2 rain_3 rain_4 rain_5 rain_6
+25%    1.4    2.2    0.0    0.0    0.0    0.0    0.0    0.0
+75%    3.7    4.1    0.3    0.2    0.3    0.4    0.3    0.1</code></pre>
 </div>
 </div>
 <div class="cell">
@@ -3337,11 +3340,11 @@ vertical-align: -.125em;
 <span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>    as.data.frame</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>quartiles_plot_level_variable</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>quartiles_plot_level_variable <span class="sc">%&gt;%</span> <span class="fu">round</span> (<span class="at">digits =</span> <span class="dv">1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>    tan.app app.rate man.dm
-25% 36.6595   18.725   3.79
-75% 80.3025   36.650   8.15</code></pre>
+25%    36.7     18.7    3.8
+75%    80.3     36.7    8.2</code></pre>
 </div>
 </div>
 <div class="cell">
@@ -3395,13 +3398,14 @@ vertical-align: -.125em;
 </div>
 <section id="data_scenarios_random_forest" class="level2">
 <h2 class="anchored" data-anchor-id="data_scenarios_random_forest">data_scenarios_random_forest</h2>
+<p>Construction of the data_scenarios_random_forest dataframe.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>data_scenarios_random_forest <span class="ot">=</span> data_scenarios <span class="sc">%&gt;%</span> </span>
 <span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span> (<span class="sc">-</span> pmid, <span class="sc">-</span> group_temp, <span class="sc">-</span> group_wind, <span class="sc">-</span> group_rain) <span class="sc">%&gt;%</span></span>
 <span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span> (<span class="at">man.source =</span> <span class="fu">as.numeric</span> (<span class="fu">recode</span> (man.source, <span class="st">&quot;pig&quot;</span> <span class="ot">=</span> <span class="dv">1</span>, <span class="st">&quot;cat&quot;</span> <span class="ot">=</span> <span class="dv">0</span>))) <span class="sc">%&gt;%</span></span>
 <span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span> (<span class="at">app.mthd =</span> <span class="fu">as.numeric</span> (<span class="fu">recode</span> (app.mthd, <span class="st">&quot;bc&quot;</span> <span class="ot">=</span> <span class="dv">1</span>, <span class="st">&quot;ts&quot;</span> <span class="ot">=</span> <span class="dv">2</span>, <span class="st">&quot;os&quot;</span> <span class="ot">=</span> <span class="dv">3</span>, <span class="st">&quot;bsth&quot;</span> <span class="ot">=</span> <span class="dv">4</span>))) <span class="sc">%&gt;%</span></span>
-<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span> (<span class="at">incorp =</span> <span class="fu">as.numeric</span> (<span class="fu">recode</span> (incorp, <span class="st">&quot;none&quot;</span> <span class="ot">=</span> <span class="dv">1</span>, <span class="st">&quot;shallow&quot;</span> <span class="ot">=</span> <span class="dv">2</span>, <span class="st">&quot;deep&quot;</span> <span class="ot">=</span> <span class="dv">3</span>))) <span class="sc">%&gt;%</span></span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span> (<span class="at">incorp =</span> <span class="fu">as.numeric</span> (<span class="fu">recode</span> (incorp, <span class="st">&quot;none&quot;</span> <span class="ot">=</span> <span class="dv">1</span>, <span class="st">&quot;shallow&quot;</span> <span class="ot">=</span> <span class="dv">2</span>))) <span class="sc">%&gt;%</span></span>
 <span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a>    {.}</span>
 <span id="cb28-9"><a href="#cb28-9" aria-hidden="true" tabindex="-1"></a></span>
@@ -3410,6 +3414,7 @@ vertical-align: -.125em;
 </section>
 <section id="data_scenarios_xgboost" class="level2">
 <h2 class="anchored" data-anchor-id="data_scenarios_xgboost">data_scenarios_xgboost</h2>
+<p>Construction of the data_scenarios_xgboost dataframe.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>data_scenarios_xgboost <span class="ot">=</span> data_scenarios <span class="sc">%&gt;%</span> </span>
 <span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a></span>
@@ -3417,7 +3422,7 @@ vertical-align: -.125em;
 <span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span> (<span class="at">man.source =</span> <span class="fu">as.numeric</span> (<span class="fu">recode</span> (man.source, <span class="st">&quot;pig&quot;</span> <span class="ot">=</span> <span class="dv">1</span>, <span class="st">&quot;cat&quot;</span> <span class="ot">=</span> <span class="dv">0</span>))) <span class="sc">%&gt;%</span></span>
 <span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span> (<span class="at">app.mthd =</span> <span class="fu">as.numeric</span> (<span class="fu">recode</span> (app.mthd, <span class="st">&quot;bc&quot;</span> <span class="ot">=</span> <span class="dv">1</span>, <span class="st">&quot;ts&quot;</span> <span class="ot">=</span> <span class="dv">2</span>, <span class="st">&quot;os&quot;</span> <span class="ot">=</span> <span class="dv">3</span>, <span class="st">&quot;bsth&quot;</span> <span class="ot">=</span> <span class="dv">4</span>))) <span class="sc">%&gt;%</span></span>
-<span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span> (<span class="at">incorp =</span> <span class="fu">as.numeric</span> (<span class="fu">recode</span> (incorp, <span class="st">&quot;none&quot;</span> <span class="ot">=</span> <span class="dv">1</span>, <span class="st">&quot;shallow&quot;</span> <span class="ot">=</span> <span class="dv">2</span>, <span class="st">&quot;deep&quot;</span> <span class="ot">=</span> <span class="dv">3</span>))) <span class="sc">%&gt;%</span></span>
+<span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span> (<span class="at">incorp =</span> <span class="fu">as.numeric</span> (<span class="fu">recode</span> (incorp, <span class="st">&quot;none&quot;</span> <span class="ot">=</span> <span class="dv">1</span>, <span class="st">&quot;shallow&quot;</span> <span class="ot">=</span> <span class="dv">2</span>))) <span class="sc">%&gt;%</span></span>
 <span id="cb29-8"><a href="#cb29-8" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb29-9"><a href="#cb29-9" aria-hidden="true" tabindex="-1"></a>    {.}</span>
 <span id="cb29-10"><a href="#cb29-10" aria-hidden="true" tabindex="-1"></a></span>
@@ -3426,6 +3431,7 @@ vertical-align: -.125em;
 </section>
 <section id="data_scenarios_lasso" class="level2">
 <h2 class="anchored" data-anchor-id="data_scenarios_lasso">data_scenarios_lasso</h2>
+<p>Construction of the data_scenarios_lasso dataframe.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>data_scenarios_lasso <span class="ot">=</span> data_scenarios <span class="sc">%&gt;%</span> </span>
 <span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a></span>
@@ -3441,7 +3447,7 @@ vertical-align: -.125em;
 <span id="cb30-12"><a href="#cb30-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span> (<span class="sc">-</span> app.mthd) <span class="sc">%&gt;%</span></span>
 <span id="cb30-13"><a href="#cb30-13" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb30-14"><a href="#cb30-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span> (<span class="at">incorp.shallow =</span> <span class="fu">ifelse</span> (incorp <span class="sc">==</span> <span class="st">&quot;shallow&quot;</span>, <span class="dv">1</span>, <span class="dv">0</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb30-15"><a href="#cb30-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span> (<span class="at">incorp.deep =</span> <span class="fu">ifelse</span> (incorp <span class="sc">==</span> <span class="st">&quot;deep&quot;</span>, <span class="dv">1</span>, <span class="dv">0</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb30-15"><a href="#cb30-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span> (<span class="at">incorp.deep =</span> <span class="dv">0</span>) <span class="sc">%&gt;%</span></span>
 <span id="cb30-16"><a href="#cb30-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span> (<span class="sc">-</span> incorp)</span>
 <span id="cb30-17"><a href="#cb30-17" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ---------</span></span>
 <span id="cb30-18"><a href="#cb30-18" aria-hidden="true" tabindex="-1"></a></span>
@@ -3450,6 +3456,7 @@ vertical-align: -.125em;
 </section>
 <section id="data_scenarios_alfam2" class="level2">
 <h2 class="anchored" data-anchor-id="data_scenarios_alfam2">data_scenarios_alfam2</h2>
+<p>Construction of the data_scenarios_alfam2 dataframe.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>data_scenarios_alfam2 <span class="ot">=</span> data_scenarios <span class="sc">%&gt;%</span> </span>
 <span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a></span>
@@ -3457,7 +3464,7 @@ vertical-align: -.125em;
 <span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span> (<span class="sc">-</span> time) <span class="sc">%&gt;%</span></span>
 <span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">pivot_longer</span> (<span class="at">cols =</span> <span class="fu">c</span> (<span class="dv">10</span> <span class="sc">:</span> <span class="dv">27</span>), <span class="at">names_to =</span> <span class="fu">c</span> (<span class="st">&quot;.value&quot;</span>, <span class="st">&quot;time&quot;</span>), <span class="at">names_pattern =</span> <span class="st">&quot;(.+)_(.+)&quot;</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">pivot_longer</span> (<span class="at">cols =</span> <span class="fu">contains</span> (<span class="st">&quot;temp_&quot;</span>) <span class="sc">|</span> <span class="fu">contains</span> (<span class="st">&quot;wind_&quot;</span>) <span class="sc">|</span> <span class="fu">contains</span> (<span class="st">&quot;rain_&quot;</span>), <span class="at">names_to =</span> <span class="fu">c</span> (<span class="st">&quot;.value&quot;</span>, <span class="st">&quot;time&quot;</span>), <span class="at">names_pattern =</span> <span class="st">&quot;(.+)_(.+)&quot;</span>) <span class="sc">%&gt;%</span></span>
 <span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span> (<span class="sc">-</span> group_temp, <span class="sc">-</span> group_wind, <span class="sc">-</span> group_rain) <span class="sc">%&gt;%</span></span>
 <span id="cb31-10"><a href="#cb31-10" aria-hidden="true" tabindex="-1"></a></span>
