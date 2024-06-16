@@ -4,7 +4,6 @@ author:
   - "Armand Favrot"
   - "Sophie Génermont"
   - "Céline Decuq"
-  - "Jean-Marc Giliot"
   - "David Makowski"
 format:
   html:
@@ -81,7 +80,7 @@ plot_data_description = data_alfam2 %>%
 
     ggplot () +
         geom_line (aes (x = time, y = e.rel, group = pmid), linewidth = 0.15) +
-        ylab ("Cumul of relative emission") +
+        ylab ("Cumulative emission (frac. applied TAN)") +
         xlab ("Time (h)") +
         theme (axis.title.y = element_text (margin = ggplot2::margin (r = 25)),
                strip.text.x = element_text(margin = ggplot2::margin(t = 8, b = 8, r = 0, l = 0))) +
@@ -358,7 +357,7 @@ plot_residuals_complete_dataset = predictions_of_all_methods %>%
         geom_hline (yintercept = 0, linetype = 2) +
         scale_fill_manual (values = Dark2[c(2, 5, 6, 8)]) +
         facet_wrap (~ app.mthd, ncol = 1) +
-        ylab ("Residual") +
+        ylab ("Residual (frac. applied TAN)") +
         labs (fill = "") +
         theme (legend.position = "bottom",
                axis.title.y = element_text (margin = ggplot2::margin (r = 30)),
@@ -381,7 +380,7 @@ plot_residuals_evaluation_subset = predictions_of_all_methods %>%
         geom_hline (yintercept = 0, linetype = 2) +
         scale_fill_manual (values = Dark2[c(2, 5, 6, 8)]) +
         facet_wrap (~ app.mthd, ncol = 1) +
-        ylab ("Residual") +
+        ylab ("Residual (frac. applied TAN)") +
         labs (fill = "") +
         theme (legend.position = "bottom",
                axis.title.y = element_text (margin = ggplot2::margin (r = 30)),
@@ -428,7 +427,7 @@ plot_observed_vs_predicted_values = predictions_of_all_methods %>%
                axis.title.x = element_text (margin = ggplot2::margin (t = 15, b = 20)),
                strip.text.x = element_text(margin = ggplot2::margin(t = 8, b = 8, r = 0, l = 0))) +
 
-        xlab ("Observed values") + ylab ("Predicted values") +
+        xlab ("Observed values (kg/ha)") + ylab ("Predicted values (kg/ha)") +
 
         NULL
 
@@ -889,8 +888,8 @@ data_tmp = data_scenarios %>%
     filter (efficacy_xgboost > 0) %>%
     select (efficacy_xgboost, tan.app, app.mthd, app.rate, man.source, incorp, group_temp, group_wind, group_rain) %>%
     mutate (group_rain = ifelse (group_rain == "q1", "low", "high")) %>%
-    mutate (tan.app = paste ("TAN = ", tan.app),
-            app.rate = paste ("Application rate = ", app.rate),
+    mutate (tan.app = paste ("TAN = ", round (tan.app, digits = 1), " kg/ha", sep = ""),
+            app.rate = paste ("Application rate = ", round (app.rate, digits = 1), " t/ha or m3/ha", sep = ""),
             group_rain = paste ("Rain = ", group_rain))
 
 plot = ggplot (data_tmp) +
@@ -898,9 +897,11 @@ plot = ggplot (data_tmp) +
     facet_wrap (~ tan.app + app.rate + group_rain) +
     xlab ("Efficacy") +
     ylab ("Number of predictions") +
-    theme (axis.title.y = element_text (margin = ggplot2::margin (r = 20)),
+    theme (axis.title.y = element_text (margin = ggplot2::margin (r = 20), size = 18),
            strip.text.x = element_text(margin = ggplot2::margin(t = 8, b = 8, r = 0, l = 0)),
-           strip.text = element_text (size = 24))
+           strip.text = element_text (size = 18),
+           axis.text = element_text (size = 18),
+           axis.title.x = element_text (size = 18))
 
 plot
 ```
@@ -922,6 +923,18 @@ data_scenarios %>%
              mean_alfam2 = mean (efficacy_alfam2), 
              mean_gbf = mean (efficacy_xgboost), 
              mean_lasso = mean (efficacy_lasso), .by = c ('app.mthd')) %>%
+  mutate_if (is.numeric, round, digits = 1) %>%
+  kable()
+```
+
+
+```{r}
+data_scenarios %>%
+  filter (! (app.mthd == "bc" & incorp == "none")) %>%
+  summarise (median_rf = median (efficacy_random_forest), 
+             median_alfam2 = median (efficacy_alfam2), 
+             median_gbf = median (efficacy_xgboost), 
+             median_lasso = median (efficacy_lasso), .by = c ('app.mthd')) %>%
   mutate_if (is.numeric, round, digits = 1) %>%
   kable()
 ```
