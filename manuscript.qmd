@@ -350,8 +350,8 @@ Comparison of residual for the calibration and evaluation subsets.
 ```{r, fig.height = 12, fig.width = 10}
 plot_residuals_complete_dataset = predictions_of_all_methods %>%
     mutate (residuals = truth_er - er) %>%
-    mutate (app.mthd = recode (app.mthd, "bc" = "Broadcast", "bsth" = "Trailing hose", "ts" = "Trailing shoe", "os" = "Open slot injection")) %>%
-    mutate (app.mthd = factor (app.mthd, levels = c ("Broadcast", "Trailing hose", "Trailing shoe", "Open slot injection"))) %>%
+    mutate (app.mthd = recode (app.mthd, "bc" = "Broadcast", "bsth" = "Trailing hoses", "ts" = "Trailing shoes", "os" = "Open slot injection")) %>%
+    mutate (app.mthd = factor (app.mthd, levels = c ("Broadcast", "Trailing hoses", "Trailing shoes", "Open slot injection"))) %>%
     ggplot () +
         geom_boxplot (aes (x = country, y = residuals, fill = method)) +
         geom_hline (yintercept = 0, linetype = 2) +
@@ -373,8 +373,8 @@ Comparison of residual for the evaluation subset.
 plot_residuals_evaluation_subset = predictions_of_all_methods %>%
     filter (dataset == "Evaluation subset") %>%
     mutate (residuals = truth_er - er) %>%
-    mutate (app.mthd = recode (app.mthd, "bc" = "Broadcast", "bsth" = "Trailing hose", "ts" = "Trailing shoe", "os" = "Open slot injection")) %>%
-    mutate (app.mthd = factor (app.mthd, levels = c ("Broadcast", "Trailing hose", "Trailing shoe", "Open slot injection"))) %>%
+    mutate (app.mthd = recode (app.mthd, "bc" = "Broadcast", "bsth" = "Trailing hoses", "ts" = "Trailing shoes", "os" = "Open slot injection")) %>%
+    mutate (app.mthd = factor (app.mthd, levels = c ("Broadcast", "Trailing hoses", "Trailing shoes", "Open slot injection"))) %>%
     ggplot () +
         geom_boxplot (aes (x = country, y = residuals, fill = method), varwidth = TRUE) +
         geom_hline (yintercept = 0, linetype = 2) +
@@ -840,14 +840,15 @@ plot_scenario_predictions = data_scenarios %>%
 
     mutate (group = recode (group,
                             "bc shallow 0" = "incorporation",
-                            "bsth none -" = "trailing hose",
+                            "bsth none -" = "trailing hoses",
                             "os none -" = "open slot",
-                            "ts none -" = "trailing shoe")) %>%
+                            "ts none -" = "trailing shoes")) %>%
     
     ggplot () +
         
         geom_boxplot (aes (x = efficacy, y = group, fill = group)) +
         scale_fill_manual (values = Dark2[c(2 : 5)]) +
+        scale_y_discrete (limits = c ("open slot", "trailing shoes", "trailing hoses", "incorporation")) +
         ylab ("") + xlab ("Efficacy") +
         theme (legend.position = "none",
                axis.ticks.y = element_blank(),
