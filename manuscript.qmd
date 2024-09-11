@@ -22,7 +22,6 @@ library ("readxl") # version 1.4.3
 library ("ggplot2") # version 3.4.4
 library ("gridExtra") # version 2.3
 library ("dplyr") # version 1.1.2      
-library ("paletteer") # version 1.4.0
 library ("tibble") # version 3.2.1
 library ("tidyr") # version 1.3.0
 library ("ALFAM2") # version 3.7
@@ -55,7 +54,7 @@ theme_replace(
 
 options(ggplot2.discrete.fill = list("#67c5a7"))
 
-Dark2 = paletteer_d("RColorBrewer::Dark2")
+Dark2 = c ("#1B9E77FF", "#D95F02FF", "#7570B3FF", "#E7298AFF", "#66A61EFF", "#E6AB02FF", "#A6761DFF", "#666666FF") 
 ```
 
 # Data description 
@@ -302,13 +301,22 @@ lasso_model = cv.glmnet (
 ```
 
 ```{r}
+# lambda.1se is the largest value of lambda such that error is within 1 standard error of the 
+# lambda that minimizes the mean cross_validated error
+lasso_model$lambda.1se
+```
+
+
+```{r}
 lasso_predictions_vector = predict (
         
     lasso_model, 
 
     data_lasso %>% 
             select (- pmid, - e.cum, - e.rel, - dataset, - country) %>% 
-            as.matrix
+            as.matrix,
+    
+    s = "lambda.1se"
 )
 
 
@@ -807,7 +815,9 @@ lasso_predictions_scenarios_vector = predict (
         
     lasso_model, 
 
-    data_scenarios_lasso %>% as.matrix
+    data_scenarios_lasso %>% as.matrix,
+    
+    s = "lambda.1se"
 )
 
 
