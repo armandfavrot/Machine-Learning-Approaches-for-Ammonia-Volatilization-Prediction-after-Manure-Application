@@ -22,7 +22,6 @@ From the files of the ALFAM2 database (available in a Zenodo repository at https
 ```{r}
 library ("ggplot2") 
 library ("dplyr")       
-library ("paletteer")       
 library ("tidyr")
 ```
 
@@ -47,7 +46,7 @@ theme_replace(
 
 options(ggplot2.discrete.fill = list("#67c5a7"))
 
-Dark2 = paletteer_d("RColorBrewer::Dark2")
+Dark2 = c ("#1B9E77FF", "#D95F02FF", "#7570B3FF", "#E7298AFF", "#66A61EFF", "#E6AB02FF", "#A6761DFF", "#666666FF") 
 ```
 
 
