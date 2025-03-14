@@ -49,7 +49,8 @@ theme_replace(
     strip.text = element_text(size = axis_title_size, face = "bold", color = "white"), 
     strip.background = element_rect(fill = "#000080"), 
     panel.background = element_rect(fill = "#f3faff"), panel.grid.major = element_line(colour = "white"), 
-    panel.spacing = unit(2, "lines")
+    panel.spacing = unit(2, "lines"),
+    text = element_text (family = "Times")
 )
 
 options(ggplot2.discrete.fill = list("#67c5a7"))
@@ -75,7 +76,10 @@ Figure_1 = data_alfam2 %>%
     filter (! (app.mthd == "bsth" & incorp == "shallow")) %>%
 
     mutate (strategy = paste (app.mthd, incorp, sep = " - ")) %>%
-    mutate (strategy = recode (strategy, "bc - none" = "A", "bc - shallow" = "B", "bc - deep" = "C", "bsth - none" = "D", "os - none" = "E", "ts - none" = "F")) %>%
+    #mutate (strategy = recode (strategy, "bc - none" = "A", "bc - shallow" = "B", "bc - deep" = "C", "bsth - none" = "D", "os - none" = "E", "ts - none" = "F")) %>%
+    mutate (strategy = recode (strategy, "bc - none" = "Broadcast", "bc - shallow" = "Shallow incorporation", "bc - deep" = "Deep incorporation", "bsth - none" = "Trailing hoses", "ts - none" = "Trailing shoes", "os - none" = "Open slot")) %>%
+  
+    mutate (strategy = factor (strategy, levels = c ("Broadcast", "Shallow incorporation", "Deep incorporation", "Trailing hoses", "Trailing shoes", "Open slot"))) %>%
 
     ggplot () +
         geom_line (aes (x = time, y = e.rel, group = pmid), linewidth = 0.15) +
@@ -87,6 +91,10 @@ Figure_1 = data_alfam2 %>%
         facet_wrap (~ strategy)
 
 Figure_1
+
+png (file = "figures/Figure_1.png", width = 1000, height = 700)
+Figure_1
+dev.off()
 ```
 
 ```{r, include = FALSE}
@@ -409,6 +417,17 @@ dev.off()
 ```
 
 
+```{r, include = FALSE}
+png (file = "figures/Figure_10.png", width = 1000, height = 1100)
+plot_residuals_complete_dataset
+dev.off()
+
+png (file = "figures/Figure_11.png", width = 1000, height = 1100)
+plot_residuals_evaluation_subset
+dev.off()
+```
+
+
 ### Observed vs predicted values
 
 ```{r, fig.width = 10, fig.height = 8}
@@ -416,7 +435,9 @@ Figure_2 = predictions_of_all_methods %>%
 
     filter (dataset == "Evaluation subset") %>%
 
-    mutate (method = recode (method, "alfam2" = "A", "lasso" = "B", "random forest" = "C", "xgboost" = "D")) %>%
+    mutate (method = recode (method, "alfam2" = "ALFAM2", "lasso" = "Lasso", "random forest" = "Random forest", "xgboost" = "Gradient boosting")) %>%
+  
+    mutate (method = factor (method, levels = c ("ALFAM2", "Lasso", "Random forest", "Gradient boosting"))) %>%
     
     ggplot () +
 
@@ -444,6 +465,13 @@ Figure_2
 
 ```{r, include = FALSE}
 tiff (file = "figures/Figure_2.tiff", width = 1000, height = 700)
+Figure_2
+dev.off()
+```
+
+
+```{r, include = FALSE}
+png (file = "figures/Figure_2.png", width = 1000, height = 700)
 Figure_2
 dev.off()
 ```
@@ -504,6 +532,27 @@ df_evaluation_metrics %>%
   
     kable ()
 ```
+
+
+```{r}
+df_evaluation_metrics %>%
+  
+    filter (response == "72h cum. emission") %>%
+  
+    select (- MSE, - RMSE, - MAE, - MBE) %>%
+
+    pivot_longer (cols = c (Pearsons_r, ME)) %>%
+
+    arrange (name, dataset) %>%
+
+    mutate (variation = (abs(value) / abs(value [method == "alfam2"]) - 1) * 100, .by = c(name, dataset)) %>%
+    mutate (variation = round (variation, digits = 1)) %>%
+    mutate (value = round (value, digits = 2)) %>%
+  
+    kable ()
+```
+
+
 
 ```{r, fig.width = 16, fig.height = 5}
 # Evaluation on evalutation subset
@@ -627,7 +676,7 @@ df_importance_rf = randomForest::importance (random_forest_model) %>%
     as.data.frame %>%
     rownames_to_column (var = "Variable") %>%
     mutate (`%IncMSE` = `%IncMSE` / max (`%IncMSE`)) %>%
-    mutate (type = "A")
+    mutate (type = "Random forest")
 
 plot_importance_rf = ggplot (df_importance_rf) + 
         geom_point (aes (x = `%IncMSE`, y = Variable), size = 5) +
@@ -708,7 +757,7 @@ plot_shap_xgboost
 ```{r, fig.width = 10, fig.height = 12}
 df_importance_xgb = xgboost::xgb.importance (model = xgboost_model) %>%
     mutate (Gain = Gain / max (Gain)) %>%
-    mutate (type = "B")
+    mutate (type = "Gradient boosting")
 
 plot_importance_xgboost = df_importance_xgb %>%
 
@@ -868,7 +917,9 @@ Figure_6 = data_scenarios %>%
     pivot_longer (cols = c (5 : 8), names_to = c (".value", "method"), names_pattern = "(.+)_(.+)") %>%
     mutate (method = recode (method, "rforest" = "random forest")) %>%
 
-    mutate (method = recode (method, "alfam2" = "A", "lasso" = "B", "random forest" = "C", "xgboost" = "D")) %>%
+    mutate (method = recode (method, "alfam2" = "ALFAM2", "lasso" = "Lasso", "random forest" = "Random forest", "xgboost" = "Gradient boosting")) %>%
+  
+    mutate (method = factor (method, levels = c ("ALFAM2", "Lasso", "Random forest", "Gradient boosting"))) %>%
 
     mutate (group = paste (app.mthd, incorp, t.incorp)) %>%
     filter (! (app.mthd == "bc" & incorp == "none")) %>%
@@ -895,6 +946,12 @@ Figure_6
 
 ```{r, include = FALSE}
 tiff (file = "figures/Figure_6.tiff", width = 1000, height = 800)
+Figure_6
+dev.off()
+```
+
+```{r, include = FALSE}
+png (file = "figures/Figure_6.png", width = 1000, height = 800)
 Figure_6
 dev.off()
 ```
@@ -949,6 +1006,13 @@ dev.off()
 ```
 
 
+```{r, include = FALSE}
+png (file = "figures/Figure_8.png", width = 1200, height = 800)
+Figure_8
+dev.off()
+```
+
+
 
 
 
@@ -982,7 +1046,8 @@ data_scenarios %>%
 legend = cowplot::get_legend (plot_shap_rf)
 
 plot_shap_rf_2 = plot_shap_rf +
-    annotate (geom = "label", label = "A", size = 22, fontface = "bold", x = 45, y = 1.5, fill = "#000080", color = "white") +
+    annotate (geom = "label", label = "Random forest", size = 11, family = "Times",
+    label.padding = unit(0.8, "lines"), fontface = "bold", x = 38.5, y = 1.5, fill = "#000080", color = "white") +
     xlim (c (- 18, 45)) +
     theme (legend.position = "none", 
           plot.margin = unit (c (0, 0, 1, 0), "cm"),
@@ -991,13 +1056,25 @@ plot_shap_rf_2 = plot_shap_rf +
           axis.ticks.x = element_blank())
 
 plot_shap_xgboost_2 = plot_shap_xgboost +
-    annotate (geom = "label", label = "B", size = 22, fontface = "bold", x = 45, y = 1.5, fill = "#000080", color = "white") +
+    annotate (geom = "label", label = "Gradient boosting", size = 11, family = "Times",
+    label.padding = unit(0.8, "lines"), fontface = "bold", x = 36.8, y = 1.5, fill = "#000080", color = "white") +
     xlim (c (- 18, 45)) + 
     theme (legend.position = "none", 
           plot.margin = unit (c (0, 0, 1, 0), "cm"),
           axis.title.x = element_text (margin = ggplot2::margin (t = 10, b = 20)))
 
+png (file = "figures/Figure_5.png", width = 1000, height = 900)
+do.call ("grid.arrange", 
+         c (list(plot_shap_rf_2, 
+                 plot_shap_xgboost_2, 
+                 legend), 
+            list(layout_matrix = as.matrix(c (1, 2, 3)),
+                  heights = c (0.8, 1, 0.2))))
+dev.off()
 
+```
+
+```{r}
 tiff (file = "figures/Figure_5.tiff", width = 1000, height = 900)
 do.call ("grid.arrange", 
          c (list(plot_shap_rf_2, 
@@ -1008,8 +1085,15 @@ do.call ("grid.arrange",
 dev.off()
 ```
 
+
 ```{r}
 tiff (file = "figures/Figure_4.tiff", width = 1300, height = 800)
+grid.arrange (plot_importance_rf, plot_importance_xgboost, nrow = 1)
+dev.off()
+```
+
+```{r}
+png (file = "figures/Figure_4.png", width = 1300, height = 800)
 grid.arrange (plot_importance_rf, plot_importance_xgboost, nrow = 1)
 dev.off()
 ```
@@ -1033,8 +1117,30 @@ Figure_7 = data_alfam2 %>%
 Figure_7
 ```
 
+
+
+```{r, fig.height = 5, fig.width = 7}
+Figure_7 = data_alfam2 %>%
+    mutate (man.source = recode (man.source, "cat" = "Cattle", "pig" = "Pig")) %>%
+    ggplot () +
+        geom_boxplot (aes (x = man.source, y = tan.app)) +
+        ylab ("TAN") +
+        xlab ("Manure source") +
+        theme (axis.text.x = element_text(margin = ggplot2::margin(t = 10))) +
+        NULL
+
+Figure_7
+```
+
 ```{r, include = FALSE}
 tiff (file = "figures/Figure_7.tiff", width = 1200, height = 800)
+Figure_7
+dev.off()
+```
+
+
+```{r, include = FALSE}
+png (file = "figures/Figure_7.png", width = 1200, height = 800)
 Figure_7
 dev.off()
 ```
@@ -1056,7 +1162,7 @@ head (data) %>% select (- Title) %>% kable()
 
 ```{r, fig.height = 8, fig.width = 10}
 Figure_9 = rbind (
-    data %>% select (temp = Tem) %>% mutate (data = "Data from Peng Xu et al (2024)"),
+    data %>% select (temp = Tem) %>% mutate (data = "Data from Xu et al (2024)"),
     data_alfam2 %>% select (temp = air.temp) %>% mutate (data = "Data used for the alfam2 model")
 ) %>%
 
@@ -1078,11 +1184,18 @@ dev.off()
 ```
 
 
+```{r, include = FALSE}
+png (file = "figures/Figure_9.png", width = 1000, height = 600)
+Figure_9
+dev.off()
+```
+
+
 
 
 ```{r}
 rbind (
-    data %>% select (temp = Tem) %>% mutate (data = "Data from Peng Xu et al (2024)"),
+    data %>% select (temp = Tem) %>% mutate (data = "Data from Xu et al (2024)"),
     data_alfam2 %>% select (temp = air.temp) %>% mutate (data = "Data used for the alfam2 model")
 ) %>%
   
