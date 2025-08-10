@@ -104,6 +104,7 @@ save (data_alfam2, file = "processed_data/data_alfam2.Rdata")
 ```
 
 
+
 ```{r}
 df_join = data_alfam2 %>% select (pmid, country) %>% distinct
 ```

@@ -49,8 +49,8 @@ theme_replace(
     strip.text = element_text(size = axis_title_size, face = "bold", color = "white"), 
     strip.background = element_rect(fill = "#000080"), 
     panel.background = element_rect(fill = "#f3faff"), panel.grid.major = element_line(colour = "white"), 
-    panel.spacing = unit(2, "lines"),
-    text = element_text (family = "Times")
+    # text = element_text (family = "Times"),
+    panel.spacing = unit(2, "lines")
 )
 
 options(ggplot2.discrete.fill = list("#67c5a7"))
@@ -473,6 +473,12 @@ dev.off()
 ```{r, include = FALSE}
 png (file = "figures/Figure_2.png", width = 1000, height = 700)
 Figure_2
+dev.off()
+```
+
+```{r, include = FALSE}
+png (file = "figures/Figure_2_slides.png", width = 1000, height = 700)
+Figure_2 + theme (plot.margin = ggplot2::margin (70, 80, 10, 20))
 dev.off()
 ```
 
@@ -905,6 +911,13 @@ data_scenarios = data_scenarios %>%
             .by = c (tan.app, app.rate, man.dm, man.ph, man.source, group_temp, group_wind, group_rain))
 ```
 
+```{r}
+res_scenarios_paper1 = data_scenarios
+
+save (res_scenarios_paper1, file = "~/Bureau/res_scenarios_paper1.Rdata")
+```
+
+
 ## Comparison
 
 ```{r, fig.width = 10, fig.height = 10}
@@ -1047,7 +1060,7 @@ legend = cowplot::get_legend (plot_shap_rf)
 
 plot_shap_rf_2 = plot_shap_rf +
     annotate (geom = "label", label = "Random forest", size = 11, family = "Times",
-    label.padding = unit(0.8, "lines"), fontface = "bold", x = 38.5, y = 1.5, fill = "#000080", color = "white") +
+    label.padding = unit(0.8, "lines"), fontface = "bold", x = 40.8, y = 1.5, fill = "#000080", color = "white") +
     xlim (c (- 18, 45)) +
     theme (legend.position = "none", 
           plot.margin = unit (c (0, 0, 1, 0), "cm"),
@@ -1057,7 +1070,7 @@ plot_shap_rf_2 = plot_shap_rf +
 
 plot_shap_xgboost_2 = plot_shap_xgboost +
     annotate (geom = "label", label = "Gradient boosting", size = 11, family = "Times",
-    label.padding = unit(0.8, "lines"), fontface = "bold", x = 36.8, y = 1.5, fill = "#000080", color = "white") +
+    label.padding = unit(0.8, "lines"), fontface = "bold", x = 39.5, y = 1.5, fill = "#000080", color = "white") +
     xlim (c (- 18, 45)) + 
     theme (legend.position = "none", 
           plot.margin = unit (c (0, 0, 1, 0), "cm"),
@@ -1079,6 +1092,17 @@ tiff (file = "figures/Figure_5.tiff", width = 1000, height = 900)
 do.call ("grid.arrange", 
          c (list(plot_shap_rf_2, 
                  plot_shap_xgboost_2, 
+                 legend), 
+            list(layout_matrix = as.matrix(c (1, 2, 3)),
+                  heights = c (0.8, 1, 0.2))))
+dev.off()
+```
+
+```{r}
+png (file = "figures/Figure_5_slides.png", width = 1400, height = 900)
+do.call ("grid.arrange", 
+         c (list(plot_shap_rf_2 + theme (plot.margin = ggplot2::margin (70, 70, 0, 40)), 
+                 plot_shap_xgboost_2 + theme (plot.margin = ggplot2::margin (70, 70, 0, 40)), 
                  legend), 
             list(layout_matrix = as.matrix(c (1, 2, 3)),
                   heights = c (0.8, 1, 0.2))))
